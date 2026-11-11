@@ -1,5 +1,432 @@
 [
   {
+    "id": "voice-vlan-phone",
+    "title": "Cấu Hình Voice VLAN Cho Điện Thoại IP (IP Phone & PC Cắm Nối Tiếp)",
+    "category": "l2",
+    "desc": "Cấu hình cổng switch cấp cùng lúc 2 VLAN: VLAN Voice ưu tiên QoS cho điện thoại và VLAN Data thông thường cho máy tính cắm sau đít điện thoại",
+    "vendors": {
+      "cisco": {
+        "cmds": [
+          "configure terminal",
+          "vlan 20",
+          " name VOICE_VLAN",
+          "exit",
+          "interface {{ACCESS_PORT}}",
+          " switchport mode access",
+          " switchport access vlan {{VLAN_ID}}",
+          " switchport voice vlan 20",
+          " spanning-tree portfast",
+          " mls qos trust cos",
+          " no shutdown",
+          "exit"
+        ],
+        "note": "Lệnh 'switchport voice vlan 20' tự động gửi gói tin CDP/LLDP báo cho điện thoại IP gắn tag VLAN 20, còn máy tính cắm sau điện thoại vẫn nhận VLAN Data untagged."
+      },
+      "ciscocbs": {
+        "cmds": [
+          "configure",
+          "voice vlan id 20",
+          "interface ge1",
+          " switchport mode general",
+          " switchport general allowed vlan add {{VLAN_ID}} untagged",
+          " switchport general allowed vlan add 20 tagged",
+          " switchport general pvid {{VLAN_ID}}",
+          " voice vlan enable",
+          "exit"
+        ],
+        "note": "Cisco CBS cấu hình chế độ general hoặc voice vlan enable."
+      },
+      "juniper": {
+        "cmds": [
+          "configure",
+          "set vlans voice-vlan vlan-id 20",
+          "set switch-options voip interface {{ACCESS_PORT}} vlan voice-vlan",
+          "set interfaces {{ACCESS_PORT}} unit 0 family ethernet-switching vlan members [ {{VLAN_NAME}} voice-vlan ]",
+          "commit and-quit"
+        ],
+        "note": "Junos cấu hình VOIP qua switch-options voip interface."
+      },
+      "fortinet": {
+        "cmds": [
+          "config switch-controller managed-switch",
+          "  edit \"<Switch-ID>\"",
+          "    config ports",
+          "      edit \"{{ACCESS_PORT}}\"",
+          "        set vlan \"vlan_{{VLAN_ID}}\"",
+          "        set voice-vlan \"vlan_20\"",
+          "      next",
+          "    end",
+          "end"
+        ],
+        "note": "FortiSwitch hỗ trợ thiết lập voice-vlan trực tiếp trên port profile."
+      },
+      "huawei": {
+        "cmds": [
+          "system-view",
+          "vlan 20",
+          "quit",
+          "interface {{ACCESS_PORT}}",
+          " port link-type hybrid",
+          " port hybrid pvid vlan {{VLAN_ID}}",
+          " port hybrid untagged vlan {{VLAN_ID}}",
+          " port hybrid tagged vlan 20",
+          " voice-vlan 20 enable",
+          "quit"
+        ],
+        "note": "Huawei dùng chế độ hybrid kết hợp voice-vlan enable."
+      },
+      "mikrotik": {
+        "cmds": [
+          "/interface bridge vlan",
+          "add bridge=bridge vlan-ids={{VLAN_ID}} untagged={{ACCESS_PORT}}",
+          "add bridge=bridge vlan-ids=20 tagged={{ACCESS_PORT}}"
+        ],
+        "note": "Gán port untagged cho VLAN Data và tagged cho VLAN Voice."
+      },
+      "aruba": {
+        "cmds": [
+          "configure terminal",
+          "vlan 20",
+          " name VOICE",
+          "interface {{ACCESS_PORT}}",
+          " vlan access {{VLAN_ID}}",
+          " vlan voice 20",
+          "exit"
+        ],
+        "note": "AOS-CX dùng cú pháp gọn: vlan voice <ID>."
+      },
+      "ruijie": {
+        "cmds": [
+          "configure terminal",
+          "vlan 20",
+          "exit",
+          "interface {{ACCESS_PORT}}",
+          " switchport mode access",
+          " switchport access vlan {{VLAN_ID}}",
+          " switchport voice vlan 20",
+          "exit"
+        ],
+        "note": "Cú pháp giống hệt Cisco IOS."
+      },
+      "edgecore": {
+        "cmds": [
+          "configure",
+          "vlan database",
+          " vlan 20 name VOICE",
+          "exit",
+          "interface ethernet {{ACCESS_PORT}}",
+          " switchport allowed vlan add {{VLAN_ID}} untagged",
+          " switchport allowed vlan add 20 tagged",
+          "exit"
+        ],
+        "note": "Cấu hình tagged VLAN 20 và untagged Data VLAN."
+      }
+    }
+  },
+  {
+    "id": "dhcp-snooping-dai",
+    "title": "Chống Cắm Trộm Router WiFi & Giả Mạo ARP (DHCP Snooping & DAI)",
+    "category": "sec",
+    "desc": "Chặn triệt để tình trạng nhân viên tự ý cắm router WiFi phụ phát IP bậy làm loạn mạng (Rogue DHCP) và chống tấn công bắt lén gói tin Man-in-the-Middle (ARP Spoofing)",
+    "vendors": {
+      "cisco": {
+        "cmds": [
+          "configure terminal",
+          "ip dhcp snooping",
+          "ip dhcp snooping vlan {{VLAN_ID}}",
+          "no ip dhcp snooping information option",
+          "# Đặt cổng Uplink nối lên Server/Core là Trusted:",
+          "interface {{TRUNK_PORT}}",
+          " ip dhcp snooping trust",
+          " ip arp inspection trust",
+          "exit",
+          "# Kích hoạt Dynamic ARP Inspection (DAI):",
+          "ip arp inspection vlan {{VLAN_ID}}",
+          "exit"
+        ],
+        "note": "Kinh nghiệm vàng: Mặc định toàn bộ cổng access là UNTRUSTED (chặn gói DHCP Offer và ARP giả mạo). Bắt buộc phải trust cổng nối ra DHCP Server thật!"
+      },
+      "ciscocbs": {
+        "cmds": [
+          "configure",
+          "ip dhcp snooping",
+          "ip dhcp snooping vlan {{VLAN_ID}}",
+          "interface ge24",
+          " ip dhcp snooping trust",
+          "exit"
+        ],
+        "note": "Dòng CBS cấu hình snooping trust trên cổng Uplink."
+      },
+      "juniper": {
+        "cmds": [
+          "configure",
+          "set ethernet-switching-options secure-access-port vlan {{VLAN_NAME}} examine-dhcp",
+          "set ethernet-switching-options secure-access-port vlan {{VLAN_NAME}} arp-inspection",
+          "set ethernet-switching-options secure-access-port interface {{TRUNK_PORT}} dhcp-trusted",
+          "commit and-quit"
+        ],
+        "note": "Junos quản lý trong ethernet-switching-options secure-access-port."
+      },
+      "fortinet": {
+        "cmds": [
+          "config switch-controller managed-switch",
+          "  edit \"<Switch-ID>\"",
+          "    config ports",
+          "      edit \"{{ACCESS_PORT}}\"",
+          "        set dhcp-snoop \"untrusted\"",
+          "      next",
+          "      edit \"{{TRUNK_PORT}}\"",
+          "        set dhcp-snoop \"trusted\"",
+          "      next",
+          "    end",
+          "end"
+        ],
+        "note": "Thiết lập trusted trên cổng Uplink của FortiSwitch."
+      },
+      "huawei": {
+        "cmds": [
+          "system-view",
+          "dhcp enable",
+          "dhcp snooping enable",
+          "vlan {{VLAN_ID}}",
+          " dhcp snooping enable",
+          " arp anti-attack check user-bind enable",
+          "quit",
+          "interface {{TRUNK_PORT}}",
+          " dhcp snooping trusted",
+          "quit"
+        ],
+        "note": "Huawei dùng 'dhcp snooping trusted' và 'arp anti-attack'."
+      },
+      "mikrotik": {
+        "cmds": [
+          "/ip dhcp-server alert",
+          "add interface=bridge valid-server=192.168.10.1 alert-timeout=1m on-alert=\":log error 'Phat hien DHCP Server la!'\"",
+          "/interface bridge port",
+          "set [find interface={{TRUNK_PORT}}] trusted=yes",
+          "/ip arp",
+          "set reply-only=yes"
+        ],
+        "note": "MikroTik hỗ trợ DHCP Alert và Bridge Port Trusted."
+      },
+      "aruba": {
+        "cmds": [
+          "configure terminal",
+          "dhcp-snooping",
+          "dhcp-snooping vlan {{VLAN_ID}}",
+          "interface {{TRUNK_PORT}}",
+          " dhcp-snooping trust",
+          "exit"
+        ],
+        "note": "AOS-CX hỗ trợ dhcp-snooping và arp-inspection."
+      },
+      "ruijie": {
+        "cmds": [
+          "configure terminal",
+          "ip dhcp snooping",
+          "interface {{TRUNK_PORT}}",
+          " ip dhcp snooping trust",
+          "exit"
+        ],
+        "note": "Cú pháp giống Cisco IOS."
+      },
+      "edgecore": {
+        "cmds": [
+          "configure",
+          "ip dhcp snooping",
+          "ip dhcp snooping vlan {{VLAN_ID}}",
+          "interface ethernet {{TRUNK_PORT}}",
+          " ip dhcp snooping trust",
+          "exit"
+        ],
+        "note": "Bật DHCP Snooping và trust cổng Uplink."
+      }
+    }
+  },
+  {
+    "id": "snmpv3-secure-monitoring",
+    "title": "Cấu Hình Giám Sát An Toàn Bằng SNMPv3 (AuthPriv SHA + AES)",
+    "category": "mgmt",
+    "desc": "Thay thế giao thức SNMPv2c cũ (lộ mật khẩu public dạng rõ) bằng chuẩn SNMPv3 mã hóa an toàn đáp ứng tiêu chuẩn kiểm toán bảo mật ISO 27001 / PCI-DSS",
+    "vendors": {
+      "cisco": {
+        "cmds": [
+          "configure terminal",
+          "snmp-server view VIEW_ALL iso included",
+          "snmp-server group GRP_MONITOR v3 priv read VIEW_ALL",
+          "snmp-server user {{USER}} GRP_MONITOR v3 auth sha {{PASS}} priv aes 128 {{PASS}}",
+          "snmp-server host 192.168.1.100 version 3 priv {{USER}}",
+          "exit"
+        ],
+        "note": "Mức bảo mật cao nhất: AuthPriv (vừa xác thực bằng SHA, vừa mã hóa dữ liệu đường truyền bằng AES)."
+      },
+      "ciscocbs": {
+        "cmds": [
+          "configure",
+          "snmp-server group GRP_MONITOR v3 priv",
+          "snmp-server user {{USER}} GRP_MONITOR auth sha {{PASS}} priv aes {{PASS}}",
+          "exit"
+        ],
+        "note": "CBS hỗ trợ SNMPv3 người dùng với xác thực SHA/AES."
+      },
+      "juniper": {
+        "cmds": [
+          "configure",
+          "set snmp v3 usm local-engine user {{USER}} authentication-sha authentication-password \"{{PASS}}\"",
+          "set snmp v3 usm local-engine user {{USER}} privacy-aes128 privacy-password \"{{PASS}}\"",
+          "set snmp v3 vacm security-to-group security-model usm security-name {{USER}} group GRP_MONITOR",
+          "set snmp v3 vacm access group GRP_MONITOR default-context-prefix security-model usm security-level privacy read-view all",
+          "commit and-quit"
+        ],
+        "note": "Cấu hình SNMPv3 USM/VACM chi tiết của Junos."
+      },
+      "fortinet": {
+        "cmds": [
+          "config system snmp user",
+          "  edit \"{{USER}}\"",
+          "    set status enable",
+          "    set trap-status enable",
+          "    set auth-proto sha",
+          "    set auth-pwd \"{{PASS}}\"",
+          "    set priv-proto aes",
+          "    set priv-pwd \"{{PASS}}\"",
+          "    set security-level auth-priv",
+          "  next",
+          "end"
+        ],
+        "note": "Khai báo SNMPv3 user trong config system snmp user."
+      },
+      "huawei": {
+        "cmds": [
+          "system-view",
+          "snmp-agent",
+          "snmp-agent sys-info version v3",
+          "snmp-agent group v3 GRP_MONITOR privacy read-view VIEW_ALL",
+          "snmp-agent usm-user v3 {{USER}} group GRP_MONITOR",
+          "snmp-agent usm-user v3 {{USER}} authentication-mode sha cipher {{PASS}}",
+          "snmp-agent usm-user v3 {{USER}} privacy-mode aes128 cipher {{PASS}}",
+          "quit"
+        ],
+        "note": "Huawei dùng snmp-agent usm-user v3."
+      },
+      "mikrotik": {
+        "cmds": [
+          "/snmp community",
+          "set [find name=public] disabled=yes",
+          "/snmp",
+          "set enabled=yes",
+          "/snmp community",
+          "add name=snmpv3 security=private authentication-protocol=SHA1 authentication-password=\"{{PASS}}\" encryption-protocol=AES encryption-password=\"{{PASS}}\""
+        ],
+        "note": "RouterOS v7 hỗ trợ bảo mật SNMP private (auth+priv)."
+      },
+      "aruba": {
+        "cmds": [
+          "configure terminal",
+          "snmpv3 user {{USER}} auth sha auth-pass plaintext {{PASS}} priv aes priv-pass plaintext {{PASS}}",
+          "snmpv3 group GRP_MONITOR user {{USER}} sec-model usm",
+          "exit"
+        ],
+        "note": "AOS-CX cấu hình snmpv3 user."
+      },
+      "ruijie": {
+        "cmds": [
+          "configure terminal",
+          "snmp-server user {{USER}} GRP_MONITOR v3 auth sha {{PASS}} priv aes 128 {{PASS}}",
+          "exit"
+        ],
+        "note": "Cú pháp tương đồng Cisco IOS."
+      },
+      "edgecore": {
+        "cmds": [
+          "configure",
+          "snmp-server user {{USER}} GRP_MONITOR auth sha {{PASS}} priv aes 128 {{PASS}}",
+          "exit"
+        ],
+        "note": "SNMPv3 bảo mật trên Edgecore."
+      }
+    }
+  },
+  {
+    "id": "third-party-sfp-unlock",
+    "title": "Mở Khóa Module Quang Bên Thứ 3 (Third-Party SFP / SFP+ Unlock)",
+    "category": "hw",
+    "desc": "BÍ KÍP THỰC CHIẾN 30 NĂM: Ép Switch nhận module quang không chính hãng (OEM, Finisar, FS.com, Cablex...) mà không bị hệ thống tự động khóa cổng (GBIC Invalid / Unsupported)",
+    "vendors": {
+      "cisco": {
+        "cmds": [
+          "configure terminal",
+          "# 2 lệnh ẩn huyền thoại của Cisco:",
+          "service unsupported-transceiver",
+          "no errdisable detect cause gbic-invalid",
+          "exit",
+          "# Nếu cổng đã lỡ bị err-disabled trước đó thì reset cổng:",
+          "interface {{TRUNK_PORT}}",
+          " shutdown",
+          " no shutdown",
+          "exit"
+        ],
+        "note": "Khi gõ lệnh này, Cisco sẽ in một cảnh báo chối bỏ trách nhiệm bảo hành phần cứng module quang (bấm Enter để đồng ý). Cổng sẽ UP ngay lập tức!"
+      },
+      "ciscocbs": {
+        "cmds": [
+          "# Switch Cisco CBS chấp nhận phần lớn module quang SFP chuẩn MSA tiêu chuẩn.",
+          "# Nếu không nhận, kiểm tra lệnh speed/duplex hoặc ép chạy đúng 1000 full:"
+        ],
+        "note": "CBS ít kén SFP hơn Catalyst nhưng cần module tương thích MSA."
+      },
+      "juniper": {
+        "cmds": [
+          "# Juniper Junos mặc định không khóa cổng khi cắm SFP bên thứ 3.",
+          "# Nếu cổng không lên, kiểm tra xem tốc độ có bị lệch giữa 1G và 10G không:",
+          "set interfaces {{TRUNK_PORT}} gigether-options speed 1g"
+        ],
+        "note": "Junos ghi cảnh báo 'Unrecognized transceiver' vào log nhưng cổng vẫn UP và truyền dữ liệu bình thường."
+      },
+      "fortinet": {
+        "cmds": [
+          "# FortiSwitch / FortiGate mở hoàn toàn cho module quang SFP/SFP+ tiêu chuẩn."
+        ],
+        "note": "Không cần lệnh bypass."
+      },
+      "huawei": {
+        "cmds": [
+          "system-view",
+          "# Tắt cảnh báo module không chính hãng làm đầy log:",
+          "transceiver non-certified-alarm disable",
+          "quit"
+        ],
+        "note": "Lệnh này ngăn Huawei bắn cảnh báo non-certified transceiver vào syslog."
+      },
+      "mikrotik": {
+        "cmds": [
+          "# MikroTik mở hoàn toàn 100%, cắm nhận mọi module quang SFP/SFP+/QSFP."
+        ],
+        "note": "Nổi tiếng là thương hiệu thân thiện nhất với các loại module quang trên thị trường."
+      },
+      "aruba": {
+        "cmds": [
+          "configure terminal",
+          "allow-unsupported-transceiver",
+          "exit"
+        ],
+        "note": "Trên ArubaOS-CX, bắt buộc phải có lệnh 'allow-unsupported-transceiver' và bấm phím 'y' để chấp nhận."
+      },
+      "ruijie": {
+        "cmds": [
+          "# Ruijie RGOS hỗ trợ hầu hết các module quang SFP OEM chuẩn MSA."
+        ],
+        "note": "Cắm là chạy (Plug and Play)."
+      },
+      "edgecore": {
+        "cmds": [
+          "# Switch Edgecore ECS chuẩn Open Hardware, chấp nhận mọi module quang."
+        ],
+        "note": "Không bị khóa giới hạn hãng."
+      }
+    }
+  },
+  {
     "id": "vlan-create",
     "title": "Tạo VLAN & Đặt Tên (VLAN Database)",
     "category": "l2",

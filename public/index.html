@@ -70,6 +70,14 @@
           <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
           <span>Password Recovery</span>
         </button>
+        <button id="nav-btn-console" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-console">
+          <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          <span>Thông Số Console</span>
+        </button>
+        <button id="nav-btn-fiber" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-fiber">
+          <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+          <span>Quang &amp; SFP Unlock</span>
+        </button>
       </nav>
 
       <!-- Action Buttons -->
@@ -95,6 +103,8 @@
       <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-subnet">Tính Subnet</button>
       <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-ports">Port &amp; Protocol</button>
       <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-recovery">Password Reset</button>
+      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-console">Console</button>
+      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-fiber">Quang SFP</button>
     </div>
   </header>
 
@@ -360,6 +370,123 @@
 
       <!-- Show Command Cards Grid -->
       <div id="showcmds-container" class="space-y-4"></div>
+    </div>
+  </section>
+
+
+  <!-- VIEW 6: BẢNG THÔNG SỐ CỔNG CONSOLE & SERIAL CABLE ĐA HÃNG -->
+  <section id="view-console" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            Bảng Thông Số Kết Nối Console Serial &amp; Cáp Cứu Hộ Đa Hãng
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Cực Kỳ Quan Trọng</span>
+          </h2>
+          <p class="text-xs text-slate-400">Tra cứu nhanh tốc độ Baudrate, thông số 8-N-1, chuẩn chân cắm cáp và tài khoản mặc định của 9 hãng</p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-lg border border-slate-800">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-950 text-slate-300 border-b border-slate-800 font-semibold">
+              <th class="p-3">Thương Hiệu Thiết Bị</th>
+              <th class="p-3 text-amber-400">Tốc Độ Baudrate Chuẩn</th>
+              <th class="p-3">Cấu Hình Serial</th>
+              <th class="p-3">Loại Cổng &amp; Cáp Console</th>
+              <th class="p-3">Tài Khoản Mặc Định</th>
+              <th class="p-3">Lưu Ý Sống Còn</th>
+            </tr>
+          </thead>
+          <tbody id="console-tbody" class="divide-y divide-slate-800/80 font-mono text-xs">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEW 7: CẨM NANG CÁP QUANG & BÍ KÍP MỞ KHÓA SFP BÊN THỨ 3 -->
+  <section id="view-fiber" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            Cẩm Nang Cáp Quang &amp; Bí Kíp Mở Khóa Module SFP Hãng Thứ 3
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Kinh Nghiệm 30 Năm</span>
+          </h2>
+          <p class="text-xs text-slate-400">Phân biệt chuẩn Single-mode vs Multi-mode, ngưỡng dBm an toàn và lệnh mở khóa module quang OEM không chính hãng</p>
+        </div>
+      </div>
+
+      <!-- Fiber Standards Table -->
+      <div class="mb-6">
+        <h3 class="text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+          1. Bảng Phân Biệt Các Loại Cáp Quang &amp; Bước Sóng Chuẩn
+        </h3>
+        <div class="overflow-x-auto rounded-lg border border-slate-800">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-950 text-slate-300 border-b border-slate-800 font-semibold">
+                <th class="p-3">Chuẩn Loại Cáp / Module</th>
+                <th class="p-3 text-cyan-400">Bước Sóng (λ)</th>
+                <th class="p-3">Đường Kính Lõi</th>
+                <th class="p-3">Màu Sắc Vỏ Cáp</th>
+                <th class="p-3 text-emerald-400">Khoảng Cách Tối Đa</th>
+                <th class="p-3">Ứng Dụng Thực Tế</th>
+              </tr>
+            </thead>
+            <tbody id="fiber-standards-tbody" class="divide-y divide-slate-800/80 font-mono text-xs"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Power Levels & Danger Zones -->
+      <div class="mb-6">
+        <h3 class="text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          2. Ngưỡng Công Suất Thu Rx (dBm) &amp; Mức Độ Nguy Hiểm
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3.5">
+            <div class="text-[11px] text-emerald-400 font-bold uppercase">Mức Đẹp Hoàn Hảo (Safe)</div>
+            <div class="text-sm font-mono font-bold text-white mt-1">-3 dBm đến -15 dBm</div>
+            <div class="text-[11px] text-slate-400 mt-1.5">Tín hiệu cực sạch, không mất gói tin nào.</div>
+          </div>
+          <div class="bg-slate-950 border border-amber-500/30 rounded-xl p-3.5">
+            <div class="text-[11px] text-amber-400 font-bold uppercase">Mức Bắt Đầu Suy Hao (Warning)</div>
+            <div class="text-sm font-mono font-bold text-white mt-1">-16 dBm đến -20 dBm</div>
+            <div class="text-[11px] text-slate-400 mt-1.5">Do mối hàn suy hao hoặc cáp bị uốn cong quá mức.</div>
+          </div>
+          <div class="bg-slate-950 border border-rose-500/30 rounded-xl p-3.5">
+            <div class="text-[11px] text-rose-400 font-bold uppercase">Mức Cực Kỳ Nguy Hiểm (Danger)</div>
+            <div class="text-sm font-mono font-bold text-white mt-1">&lt; -22 dBm</div>
+            <div class="text-[11px] text-slate-400 mt-1.5">Nguy cơ rớt gói, chập chờn hoặc cổng down ngắt quãng.</div>
+          </div>
+          <div class="bg-slate-950 border border-purple-500/30 rounded-xl p-3.5">
+            <div class="text-[11px] text-purple-400 font-bold uppercase">Cháy Quang / Quá Tải (Overload)</div>
+            <div class="text-sm font-mono font-bold text-white mt-1">&gt; -1 dBm</div>
+            <div class="text-[11px] text-slate-400 mt-1.5">Công suất phát quá mạnh gây mù diode! Cần gắn suy hao (Attenuator).</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SFP 3rd Party Unlock Playbook -->
+      <div>
+        <h3 class="text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          3. Tuyệt Chiêu Mở Khóa Module Quang OEM / Bên Thứ 3 (Third-Party SFP)
+        </h3>
+        <div id="sfp-unlock-cards" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      </div>
     </div>
   </section>
 

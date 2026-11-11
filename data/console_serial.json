@@ -1,0 +1,74 @@
+[
+  {
+    "vendor": "Cisco Catalyst (IOS / IOS-XE)",
+    "baud": "9600 bps",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control (9600 8-N-1)",
+    "cable": "Cáp RJ45 to DB9 (Rollover) hoặc cáp USB Type-B / Type-C (cần driver Cisco CP210x)",
+    "defaultUser": "Không có mặc định (hoặc cisco/cisco trên một số thiết bị mới)",
+    "note": "Baud chuẩn 9600. Nếu màn hình hiện ký tự lạ, kiểm tra baudrate có bị chỉnh trong config-register không."
+  },
+  {
+    "vendor": "Cisco CBS (Business 250/350/550)",
+    "baud": "115200 bps",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control (115200 8-N-1)",
+    "cable": "Cổng RJ45 Console hoặc Mini-USB Console",
+    "defaultUser": "cisco / cisco (hoặc admin / admin tùy phiên bản firmware)",
+    "note": "BẪY KINH ĐIỂN: Cổng console CBS bắt buộc 115200 bps, để 9600 sẽ bị đen màn hình!"
+  },
+  {
+    "vendor": "Juniper Networks (Junos OS)",
+    "baud": "9600 bps",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control (9600 8-N-1)",
+    "cable": "Cáp RJ45 Console (Rollover chuẩn cisco cắm được) hoặc Mini-USB",
+    "defaultUser": "root (không có mật khẩu khi xuất xưởng)",
+    "note": "Sau khi đăng nhập root, bắt buộc phải đặt mật khẩu root thì hệ thống mới cho commit cấu hình."
+  },
+  {
+    "vendor": "Fortinet (FortiGate FortiOS)",
+    "baud": "9600 bps",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control (9600 8-N-1)",
+    "cable": "Cổng RJ45 Console",
+    "defaultUser": "admin (không có mật khẩu ở trạng thái xuất xưởng)",
+    "note": "Tài khoản cứu hộ duy nhất trong 14 giây boot: maintainer / bcpb + <SERIAL_NUMBER>."
+  },
+  {
+    "vendor": "Huawei (VRP OS)",
+    "baud": "9600 bps",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control (9600 8-N-1)",
+    "cable": "Cổng RJ45 Console chuẩn chuẩn EIA/TIA-232",
+    "defaultUser": "admin / admin@huawei.com (hoặc rỗng trên dòng Enterprise switch)",
+    "note": "Mật khẩu BootROM mặc định khi bấm Ctrl+B: Admin@huawei.com (chú ý chữ A hoa)."
+  },
+  {
+    "vendor": "MikroTik (RouterOS)",
+    "baud": "115200 bps",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control (115200 8-N-1)",
+    "cable": "Cổng Serial DB9 hoặc RJ45 Serial (RouterBOARD CCR/CRS)",
+    "defaultUser": "admin (không có mật khẩu)",
+    "note": "MikroTik hầu hết quản lý qua Winbox (MAC-Winbox cổng Neighbor) hoặc console 115200."
+  },
+  {
+    "vendor": "Aruba / HP (AOS-S & AOS-CX)",
+    "baud": "115200 bps (AOS-CX) / 9600 bps (AOS-S ProCurve)",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control",
+    "cable": "Cổng USB Type-C Console hoặc Micro-USB",
+    "defaultUser": "admin (không mật khẩu, yêu cầu tạo mới khi boot lần đầu)",
+    "note": "Dòng AOS-CX hiện đại (CX 6000, 6100, 6200, 6300) mặc định chạy 115200 bps."
+  },
+  {
+    "vendor": "Ruijie Networks (RGOS / Reyee)",
+    "baud": "9600 bps (RGOS Enterprise) / 115200 bps (Reyee/Gateway)",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control",
+    "cable": "Cổng RJ45 Console chuẩn",
+    "defaultUser": "admin / admin",
+    "note": "Khi boot bấm Ctrl+C để vào bootloader U-Boot nếu cần reset pass."
+  },
+  {
+    "vendor": "Edgecore Networks (ECS)",
+    "baud": "115200 bps",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control (115200 8-N-1)",
+    "cable": "Cổng RJ45 Console",
+    "defaultUser": "admin / admin",
+    "note": "Tốc độ console chuẩn là 115200. Bấm phím Esc hoặc Ctrl+B khi khởi động để vào menu bootloader."
+  }
+]

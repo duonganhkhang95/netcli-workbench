@@ -93,4 +93,15 @@ router.post('/calculate-subnet', (req, res) => {
   });
 });
 
+
+// Get Console & Serial Data
+router.get('/console-serial', (req, res) => {
+  res.json(loadData('console_serial.json'));
+});
+
+// Get Fiber Optics & SFP Data
+router.get('/fiber-optics', (req, res) => {
+  res.json(loadData('fiber_optics.json'));
+});
+
 module.exports = router;

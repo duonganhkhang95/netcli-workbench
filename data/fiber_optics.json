@@ -1,0 +1,87 @@
+{
+  "standards": [
+    {
+      "type": "Multi-mode (MMF) 1G (SX)",
+      "wavelength": "850 nm",
+      "core": "50/125 hoặc 62.5/125 µm",
+      "jacket": "Màu Cam (OM1/OM2) hoặc Xanh Aqua (OM3/OM4)",
+      "maxDistance": "220m - 550m",
+      "desc": "Khoảng cách ngắn trong cùng phòng Server / Data Center."
+    },
+    {
+      "type": "Single-mode (SMF) 1G (LX/LH)",
+      "wavelength": "1310 nm",
+      "core": "9/125 µm",
+      "jacket": "Màu Vàng (Yellow)",
+      "maxDistance": "10 km - 20 km",
+      "desc": "Nối liên tòa nhà, campus hoặc kéo đường Internet MetroNET."
+    },
+    {
+      "type": "Single-mode (SMF) 10G (LR)",
+      "wavelength": "1310 nm",
+      "core": "9/125 µm",
+      "jacket": "Màu Vàng (Yellow)",
+      "maxDistance": "10 km",
+      "desc": "Đường trục Uplink 10G Core-to-Distribution chuẩn phổ biến nhất."
+    },
+    {
+      "type": "Single-mode (SMF) 10G/40G (ER/ZR)",
+      "wavelength": "1550 nm",
+      "core": "9/125 µm",
+      "jacket": "Màu Vàng (Yellow)",
+      "maxDistance": "40 km - 80 km",
+      "desc": "Khoảng cách xa xuyên tỉnh thành, suy hao cực thấp."
+    },
+    {
+      "type": "BiDi (Bi-Directional - 1 Sợi Quang)",
+      "wavelength": "Tx 1310nm / Rx 1490nm (hoặc 1310/1550nm)",
+      "core": "9/125 µm SMF",
+      "jacket": "Màu Vàng (1 sợi LC)",
+      "maxDistance": "10 km - 40 km",
+      "desc": "TIẾT KIỆM SỢI QUANG: 2 đầu phải cắm cặp chéo nhau (Đầu A: 1310/1490 thì Đầu B: 1490/1310)!"
+    }
+  ],
+  "powerLevels": {
+    "safeRxRange": "-3 dBm đến -15 dBm (Tín hiệu rất đẹp, thông suốt)",
+    "warningRxRange": "-16 dBm đến -20 dBm (Tín hiệu bắt đầu suy hao do hàn nối hoặc uốn cong)",
+    "dangerRxRange": "< -22 dBm (Nguy cơ rớt gói, flapping cổng, đứt mạng ngắt quãng)",
+    "overloadRx": "> -1 dBm (Cháy quang / Overload công suất! Cần gắn bộ suy hao quang Attenuator)"
+  },
+  "sfpUnlockTricks": [
+    {
+      "vendor": "Cisco Catalyst (IOS / IOS-XE)",
+      "cmds": [
+        "configure terminal",
+        "service unsupported-transceiver",
+        "no errdisable detect cause gbic-invalid",
+        "exit"
+      ],
+      "note": "Bí kíp 30 năm: Bắt buộc phải có 2 lệnh ẩn này thì switch Cisco mới cho nhận module quang OEM/bên thứ 3 (Finisar, FS.com, Cablex...) mà không bị khóa cổng!"
+    },
+    {
+      "vendor": "Aruba / HP (AOS-CX)",
+      "cmds": [
+        "configure terminal",
+        "allow-unsupported-transceiver",
+        "exit"
+      ],
+      "note": "AOS-CX sẽ hiện cảnh báo bảo hành, bấm 'y' để xác nhận cho phép module ngoài."
+    },
+    {
+      "vendor": "Huawei (VRP)",
+      "cmds": [
+        "system-view",
+        "transceiver non-certified-alarm disable",
+        "quit"
+      ],
+      "note": "Tắt cảnh báo module không chính hãng trên switch Huawei."
+    },
+    {
+      "vendor": "Edgecore / Ruijie / MikroTik",
+      "cmds": [
+        "# Mặc định MikroTik, Ruijie và Edgecore mở hoàn toàn, cắm nhận ngay mọi thương hiệu quang."
+      ],
+      "note": "Các hãng này rất thân thiện với SFP đa hãng."
+    }
+  ]
+}

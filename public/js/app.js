@@ -8,6 +8,8 @@ let ROSETTA_DATA = [];
 let NETWORK_PORTS_DATA = [];
 let RECOVERY_PLAYBOOK_DATA = [];
 let SHOW_COMMANDS_DATA = [];
+let CONSOLE_SERIAL_DATA = [];
+let FIBER_OPTICS_DATA = {};
 
 let activeCategory = 'ALL';
 let activeVendor = 'ALL';
@@ -28,13 +30,18 @@ try {
 // Fetch all datasets from Node.js Express REST API in parallel
 async function fetchAllData() {
   try {
-    const [vendorsRes, tasksRes, showRes, portsRes, recoveryRes] = await Promise.all([
+    const [vendorsRes, tasksRes, showRes, portsRes, recoveryRes, consoleRes, fiberRes] = await Promise.all([
       fetch('/api/vendors').then(r => r.json()),
       fetch('/api/tasks').then(r => r.json()),
       fetch('/api/show-commands').then(r => r.json()),
       fetch('/api/ports').then(r => r.json()),
-      fetch('/api/recovery').then(r => r.json())
+      fetch('/api/recovery').then(r => r.json()),
+      fetch('/api/console-serial').then(r => r.json()),
+      fetch('/api/fiber-optics').then(r => r.json())
     ]);
+
+    CONSOLE_SERIAL_DATA = consoleRes;
+    FIBER_OPTICS_DATA = fiberRes;
 
     VENDORS_INFO = vendorsRes;
     CORE_TASKS = tasksRes;
@@ -63,6 +70,8 @@ async function fetchAllData() {
     initSubnetCalculator();
     renderCards();
     renderShowCommands();
+    renderConsoleSerial();
+    renderFiberOptics();
     console.log('✅ NetCLI API data loaded successfully!');
   } catch (err) {
     console.error('API Error, check server status:', err);
@@ -895,3 +904,72 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Đã tải xuống file backup JSON!');
   });
 });
+
+
+// Render Console Serial Table
+function renderConsoleSerial() {
+  const tbody = document.getElementById('console-tbody');
+  if (!tbody || !CONSOLE_SERIAL_DATA.length) return;
+  tbody.innerHTML = '';
+  CONSOLE_SERIAL_DATA.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-800/40 transition';
+    tr.innerHTML = `
+      <td class="p-3 text-white font-bold">${escapeHtml(row.vendor)}</td>
+      <td class="p-3 text-amber-400 font-bold select-all">${escapeHtml(row.baud)}</td>
+      <td class="p-3 text-slate-300">${escapeHtml(row.settings)}</td>
+      <td class="p-3 text-slate-300 font-sans">${escapeHtml(row.cable)}</td>
+      <td class="p-3 text-cyan-300 select-all">${escapeHtml(row.defaultUser)}</td>
+      <td class="p-3 text-amber-300/90 font-sans text-xs">${escapeHtml(row.note)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Render Fiber Optics & SFP Unlock Playbook
+function renderFiberOptics() {
+  const tbody = document.getElementById('fiber-standards-tbody');
+  const cardsContainer = document.getElementById('sfp-unlock-cards');
+  if (!tbody || !FIBER_OPTICS_DATA.standards) return;
+
+  tbody.innerHTML = '';
+  FIBER_OPTICS_DATA.standards.forEach(std => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-800/40 transition';
+    tr.innerHTML = `
+      <td class="p-3 text-white font-bold">${escapeHtml(std.type)}</td>
+      <td class="p-3 text-cyan-400 font-bold">${escapeHtml(std.wavelength)}</td>
+      <td class="p-3 text-slate-300">${escapeHtml(std.core)}</td>
+      <td class="p-3 text-amber-300">${escapeHtml(std.jacket)}</td>
+      <td class="p-3 text-emerald-400 font-bold">${escapeHtml(std.maxDistance)}</td>
+      <td class="p-3 text-slate-300 font-sans">${escapeHtml(std.desc)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (cardsContainer && FIBER_OPTICS_DATA.sfpUnlockTricks) {
+    cardsContainer.innerHTML = '';
+    FIBER_OPTICS_DATA.sfpUnlockTricks.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3.5 card-smooth-fx flex flex-col justify-between';
+      const cmdText = item.cmds.join('\n');
+      card.innerHTML = `
+        <div>
+          <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-800">
+            <span class="text-xs font-bold text-emerald-400">${escapeHtml(item.vendor)}</span>
+            <button class="btn-copy-fiber text-[10px] text-slate-400 hover:text-emerald-400 font-medium flex items-center gap-1" data-copy="${escapeAttr(cmdText)}">
+              Copy lệnh
+            </button>
+          </div>
+          <pre class="code-font text-xs text-emerald-300 bg-slate-900 p-2 rounded border border-slate-800 leading-relaxed overflow-x-auto whitespace-pre">${escapeHtml(cmdText)}</pre>
+        </div>
+        <div class="text-[11px] text-slate-400 mt-2 font-sans">${escapeHtml(item.note)}</div>
+      `;
+      cardsContainer.appendChild(card);
+    });
+
+    document.querySelectorAll('.btn-copy-fiber').forEach(btn => {
+      btn.addEventListener('click', () => copyText(btn.getAttribute('data-copy'), btn));
+    });
+  }
+}
