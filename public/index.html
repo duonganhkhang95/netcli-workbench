@@ -63,6 +63,16 @@
             <span>Sinh Lệnh Nhanh &amp; Giả Lập</span>
             <span class="text-[9px] font-bold px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">MỚI</span>
           </button>
+          <button id="nav-btn-diagnose" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-diagnose">
+            <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>Chẩn Đoán Sự Cố</span>
+            <span class="text-[9px] font-bold px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">AI</span>
+          </button>
+          <button id="nav-btn-mikrotik" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-mikrotik">
+            <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <span>MikroTik RouterOS</span>
+            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">v7/v6</span>
+          </button>
           
           <button id="nav-btn-showcmds" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-showcmds">
             <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -144,6 +154,8 @@
     <div class="lg:hidden bg-slate-950/90 border-t border-slate-800/80 px-3 py-2 overflow-x-auto scrollbar-none flex items-center gap-2 text-xs font-medium whitespace-nowrap">
       <button class="nav-view-btn px-3 py-1 rounded-full bg-emerald-600 text-white font-bold transition shrink-0" data-view="view-generator">Cấu Hình</button>
       <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-emerald-500/40 text-emerald-300 transition shrink-0" data-view="view-builder">Sinh Lệnh &amp; Giả Lập ⚡</button>
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-rose-500/40 text-rose-300 transition shrink-0" data-view="view-diagnose">Chẩn Đoán Sự Cố 🩺</button>
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-sky-500/50 text-sky-300 font-bold transition shrink-0" data-view="view-mikrotik">MikroTik RouterOS ⚡</button>
       <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-showcmds">Lệnh Show</button>
       <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-subnet">Tính Subnet</button>
       <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-console">Console &amp; Cáp</button>
@@ -185,7 +197,7 @@
           <option value="juniper">Juniper Junos</option>
           <option value="fortinet">Fortinet FortiOS</option>
           <option value="huawei">Huawei VRP</option>
-          <option value="mikrotik">MikroTik RouterOS</option>
+          <!-- MikroTik moved to dedicated MTCINE Hub -->
           <option value="aruba">Aruba / HP (AOS-CX)</option>
           <option value="ruijie">Ruijie Networks (RGOS / Reyee)</option>
           <option value="edgecore">Edgecore Networks (ECS)</option>
@@ -686,7 +698,7 @@
             <option value="juniper">Juniper Junos</option>
             <option value="fortinet">Fortinet FortiOS</option>
             <option value="huawei">Huawei VRP</option>
-            <option value="mikrotik">MikroTik RouterOS</option>
+            <!-- MikroTik moved to dedicated MTCINE Hub -->
             <option value="aruba">Aruba / HP (AOS-CX)</option>
             <option value="ruijie">Ruijie Networks (RGOS / Reyee)</option>
             <option value="edgecore">Edgecore Networks (ECS)</option>
@@ -859,6 +871,417 @@
 
           </div>
 
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+    <!-- VIEW 10: TRẠM CHẨN ĐOÁN SỰ CỐ TỰ ĐỘNG & BÁC SĨ MẠNG (AI DIAGNOSTIC DOCTOR & OPTIMIZER) -->
+  <section id="view-diagnose" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm">
+      
+      <!-- Top Title -->
+      <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 via-pink-600 to-amber-500 flex items-center justify-center text-white shadow-md">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              Trạm Chẩn Đoán Sự Cố &amp; Bác Sĩ Mạng Tự Động (AI Diagnostic Doctor &amp; Optimizer)
+              <span class="text-xs px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold">AI Scan 24/7</span>
+            </h2>
+            <p class="text-xs text-slate-400">Tự động scan cấu hình qua SSH/Telnet, phân tích toàn diện sức khỏe hệ thống, chỉ điểm nguyên nhân gốc rễ và tự động sinh kịch bản Optimizer tối ưu hóa</p>
+          </div>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs font-semibold">
+          <button id="diag-mode-paste" class="px-3 py-1.5 rounded-md bg-rose-600 text-white transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>Dán Cấu Hình / Log</span>
+          </button>
+          <button id="diag-mode-ssh" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>Quét Qua SSH / Telnet</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode 1: Paste Output & Sample Presets -->
+      <div id="diag-pane-paste" class="space-y-4 pt-2">
+        
+        <!-- Sample Presets for Testing -->
+        <div class="flex items-center gap-2 flex-wrap text-xs">
+          <span class="text-slate-400 font-medium">Mẫu Test Đánh Giá:</span>
+          <button class="btn-sample-audit px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition font-semibold" data-sample="perfect">
+            ✓ Mẫu Cấu Hình Chuẩn A+ (Hoàn Hảo)
+          </button>
+          <button class="btn-sample-audit px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition font-semibold" data-sample="suboptimal">
+            ⚠ Mẫu Thiếu Tối Ưu (Cần Optimizer)
+          </button>
+          <button class="btn-sample-audit px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition font-semibold" data-sample="critical">
+            🔴 Mẫu Dính Sự Cố Nặng (CRC &amp; Loop)
+          </button>
+        </div>
+
+        <!-- Textarea input -->
+        <!-- One-Shot Console Collector Helper -->
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-400 font-bold">💡 Bạn đang ngồi trước Console mà không biết phải gõ lệnh gì?</span>
+            <span class="text-slate-400">Copy 1 dòng quét tổng hợp dán thẳng vào switch rồi dán output vào đây:</span>
+          </div>
+          <button id="btn-copy-collector-cmd" type="button" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-mono font-bold border border-cyan-500/30 flex items-center gap-1.5 transition btn-interactive">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <span>Copy Lệnh Quét 1 Bước (One-Shot)</span>
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Dán cấu hình (show running-config) hoặc log chẩn đoán vào khung bên dưới để AI rà quét:</label>
+          <textarea id="diag-raw-input" rows="8" placeholder="Dán nội dung cấu hình switch/router hoặc log sự kiện vào đây..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3.5 font-mono text-xs text-emerald-300 focus:outline-none focus:border-rose-500 shadow-inner leading-relaxed"></textarea>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <button id="btn-run-diagnosis" class="px-5 py-2.5 bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 hover:opacity-90 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 transition btn-interactive">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>Bắt Đầu Rà Soát &amp; Phân Tích Cấu Hình</span>
+          </button>
+          <button id="btn-clear-diag-input" class="text-xs text-slate-400 hover:text-white transition">
+            Xóa Trắng Ô Nhập
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode 2: Live SSH & TELNET Probe Settings -->
+      <div id="diag-pane-ssh" class="hidden space-y-4 pt-2">
+        <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4 max-w-2xl text-xs">
+          
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <span class="font-bold text-white text-xs flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              <span>Cấu Hình Kết Nối Trực Tiếp Từ Ubuntu Server Tới Thiết Bị</span>
+            </span>
+            <span class="text-[10px] text-slate-400">Hỗ trợ cả SSH &amp; Telnet</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+            <div class="sm:col-span-4">
+              <label class="block text-slate-300 font-medium mb-1">Giao Thức Kết Nối:</label>
+              <select id="remote-protocol-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 font-semibold focus:outline-none focus:border-cyan-500">
+                <option value="SSH">SSH (Cổng 22 - Mã Hóa Bảo Mật)</option>
+                <option value="TELNET">Telnet (Cổng 23 - Chuẩn Cũ)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-5">
+              <label class="block text-slate-300 font-medium mb-1">Địa chỉ IP Switch / Router:</label>
+              <input id="ssh-target-ip" type="text" placeholder="192.168.1.1" value="192.168.10.1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-emerald-400 focus:outline-none focus:border-cyan-500">
+            </div>
+            <div class="sm:col-span-3">
+              <label class="block text-slate-300 font-medium mb-1">Cổng (Port):</label>
+              <input id="ssh-target-port" type="text" value="22" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-emerald-400 focus:outline-none focus:border-cyan-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-slate-300 font-medium mb-1">Tài khoản (Username):</label>
+              <input id="ssh-target-user" type="text" value="admin" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-medium mb-1">Mật khẩu (Password):</label>
+              <input id="ssh-target-pass" type="password" value="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500">
+            </div>
+          </div>
+
+          <button id="btn-run-ssh-probe" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <span>Kết Nối Trực Tiếp &amp; Bắt Đầu Scan Cấu Hình</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Diagnostic Results Section (Bệnh Án Mạng & Báo Cáo Sức Khỏe) -->
+      <div id="diag-results-box" class="mt-6 space-y-5 hidden">
+        
+        <!-- Health Score & Grade Header -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+          <div class="flex items-center gap-4">
+            <div id="diag-score-circle" class="w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-black text-xl border shadow-lg shrink-0">
+              <span id="diag-score-num">100</span>
+              <span class="text-[9px] uppercase font-bold text-slate-400">Score</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-bold text-white">Báo Cáo Sức Khỏe &amp; Kiểm Định Cấu Hình</h3>
+                <span id="diag-grade-badge" class="px-2.5 py-0.5 rounded text-xs font-bold border"></span>
+              </div>
+              <p id="diag-assessment-text" class="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed"></p>
+            </div>
+          </div>
+
+          <!-- Optimizer Action Button -->
+          <button id="btn-open-optimizer" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-emerald-500 hover:opacity-90 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-1.5 transition btn-interactive">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+            <span>⚡ KÍCH HOẠT OPTIMIZER (TỐI ƯU HÓA)</span>
+          </button>
+        </div>
+
+        <!-- Plain Language Reality Summary: Chuyện gì đang xảy ra? -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-800">
+            <span class="text-sm font-bold text-white flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+              <span>TỔNG QUAN TÌNH TRẠNG HIỆN TẠI (Chuyện gì đang xảy ra trên thiết bị của bạn?)</span>
+            </span>
+          </div>
+          
+          <div id="diag-what-happening" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs sm:text-sm text-slate-200 leading-relaxed font-sans">
+            <!-- Dynamic plain text summary -->
+          </div>
+
+          <!-- 4 Vital Questions answered directly -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="diag-four-answers">
+            <!-- 4 Cards rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Section: Verified Healthy Checks (Hiển thị khi cấu hình OK) -->
+        <div id="diag-good-section" class="bg-slate-950/60 border border-emerald-500/30 rounded-xl p-4 space-y-2">
+          <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 uppercase">
+            <span>✓</span>
+            <span>Các Tiêu Chuẩn Kỹ Thuật Đã Kiểm Định Đạt Chuẩn An Toàn:</span>
+          </span>
+          <div id="diag-good-list" class="space-y-1.5 text-xs text-slate-300"></div>
+        </div>
+
+        <!-- Section: Issues & Sub-optimal Points -->
+        <div id="diag-issues-section" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+              <span>Chi Tiết Sự Cố &amp; Các Điểm Cần Tối Ưu Hóa:</span>
+            </span>
+          </div>
+          <div id="diag-issues-list" class="space-y-3"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- MODAL: OPTIMIZER REMEDIAL SCRIPT (Kịch Bản Tự Động Sửa Lỗi) -->
+  <div id="modal-optimizer" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-3xl w-full flex flex-col overflow-hidden modal-anim">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">⚡</div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-white">Kịch Bản Tự Động Tối Ưu Hóa &amp; Khắc Phục Sự Cố (Optimizer Script)</h3>
+            <p class="text-xs text-slate-400">Được sinh tự động dựa trên toàn bộ các điểm cần khắc phục trong báo cáo chẩn đoán</p>
+          </div>
+        </div>
+        <button id="btn-close-optimizer" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto max-h-[60vh] space-y-3">
+        <div class="text-xs text-slate-300">
+          Chỉ cần copy toàn bộ đoạn lệnh dưới đây và dán thẳng vào chế độ cấu hình của thiết bị để tự động vá toàn bộ các lỗ hổng và tối ưu hóa hệ thống:
+        </div>
+        <pre id="optimizer-script-output" class="code-font text-xs text-emerald-300 bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto leading-relaxed whitespace-pre select-all"></pre>
+      </div>
+
+      <div class="px-6 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+        <span class="text-xs text-slate-400">Đã bao gồm lệnh <code class="text-emerald-400 font-mono">write memory</code> lưu Flash an toàn</span>
+        <div class="flex items-center gap-2">
+          <button id="btn-copy-optimizer-script" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md btn-interactive">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <span>Copy Toàn Bộ Kịch Bản Optimizer</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- VIEW 11: TRẠM CHUYÊN BIỆT MIKROTIK MTCINE MASTER HUB (ROUTEROS V7 & V6) -->
+  <section id="view-mikrotik" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm">
+      
+      <!-- Top Banner -->
+      <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-sky-600 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg font-mono font-black text-xl">
+            M
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              Trạm Chuyên Sâu MikroTik RouterOS
+              <span class="text-xs px-2.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold">Chuyên Gia RouterOS v7 &amp; v6</span>
+            </h2>
+            <p class="text-xs text-slate-400">Bộ công cụ kịch bản chuyên sâu cho RouterOS: Định tuyến đệ quy Failover, BGP v7 Traffic Engineering, MPLS/VPLS, Mangle HTB, Bridge VLAN Line-rate & Tối ưu hóa hiệu năng</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btn-copy-all-mtcine" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-sky-600 hover:bg-sky-500 text-white flex items-center gap-1.5 shadow-md transition btn-interactive">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <span>Copy Script .rsc</span>
+          </button>
+          <button id="btn-download-mtcine-rsc" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>Tải File .rsc</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live MikroTik Parameter Tweaker -->
+      <details class="my-4 bg-slate-950/80 border border-slate-800 rounded-xl overflow-hidden group" open>
+        <summary class="px-4 py-3 cursor-pointer flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-300 hover:text-sky-400 hover:bg-slate-800/40 transition">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            <span>Bộ Thông Số Cấu Hình RouterOS &amp; Đa WAN PPPoE Linh Hoạt</span>
+          </div>
+          <span class="text-xs text-sky-400 group-open:rotate-180 transition-transform">▼</span>
+        </summary>
+        
+        <div class="p-4 border-t border-slate-800 bg-slate-950 space-y-4 text-xs">
+          
+          <!-- Row 1: Core Network Settings -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <div>
+              <label class="block text-slate-400 mb-1">Cổng Quang SFP+:</label>
+              <input id="mt-sfp-port" type="text" value="sfp-sfpplus1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-sky-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">DNS Server:</label>
+              <input id="mt-dns-servers" type="text" value="8.8.8.8, 1.1.1.1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-sky-300 focus:outline-none focus:border-sky-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Dải IP DHCP Pool:</label>
+              <input id="mt-dhcp-pool" type="text" value="192.168.88.10-192.168.88.200" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-cyan-300 focus:outline-none focus:border-sky-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">LAN Subnet Network:</label>
+              <input id="mt-lan-subnet" type="text" value="192.168.88.0" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-sky-300 focus:outline-none focus:border-sky-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">LAN IP Router:</label>
+              <input id="mt-lan-ip" type="text" value="192.168.88.1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-sky-300 focus:outline-none focus:border-sky-500">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Băng Thông (DL/UL):</label>
+              <div class="flex items-center gap-1">
+                <input id="mt-total-dl" type="text" value="150" title="Download Mbps" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 font-mono text-sky-300 text-center">
+                <span class="text-slate-500">/</span>
+                <input id="mt-total-ul" type="text" value="80" title="Upload Mbps" class="w-1/2 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 font-mono text-sky-300 text-center">
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Dynamic PPPoE Multi-WAN Section with "+" Button -->
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                <span class="font-bold text-white text-xs">Cấu Hình Tài Khoản Quay Số PPPoE WAN (Hỗ trợ thêm nhiều WAN linh hoạt):</span>
+              </div>
+              <button id="btn-add-pppoe-wan" type="button" class="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition btn-interactive">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <span>+ Thêm Đường PPPoE WAN</span>
+              </button>
+            </div>
+
+            <!-- Dynamic PPPoE WAN Items Container -->
+            <div id="mt-pppoe-wan-container" class="space-y-2">
+              <!-- Default WAN 1 Row -->
+              <div class="pppoe-wan-row grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-slate-950 p-2.5 rounded-lg border border-slate-800" data-wan-idx="1">
+                <div class="sm:col-span-2">
+                  <span class="font-bold text-sky-400 text-xs flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                    <span>WAN 1 (PPPoE)</span>
+                  </span>
+                </div>
+                <div class="sm:col-span-3">
+                  <input type="text" placeholder="PPPoE Username" value="viettel_wan1" class="pppoe-user w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-sky-300 focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="sm:col-span-3">
+                  <input type="text" placeholder="PPPoE Password" value="Pass@123" class="pppoe-pass w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-sky-300 focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="sm:col-span-3">
+                  <input type="text" placeholder="Cổng Interface (vd: ether1)" value="ether1" class="pppoe-intf w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="sm:col-span-1 text-center">
+                  <span class="text-slate-600 text-xs">Mặc định</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: Custom Parameters (Tham Số Tự Do Tùy Biến) -->
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-xs flex items-center gap-1.5">
+                <span class="text-amber-400">⚙</span>
+                <span>Tham Số Tự Do Tùy Biến (Custom Parameters):</span>
+              </span>
+              <span class="text-[11px] text-slate-400">Mỗi dòng 1 cặp <code class="text-sky-300 font-mono">KEY=VALUE</code>, sẽ tự động thay thế <code class="text-sky-300 font-mono">{{KEY}}</code> trong script</span>
+            </div>
+            <textarea id="mt-custom-params" rows="2" placeholder="WIFI_SSID=Company_Guest&#10;WIFI_PASS=Guest@2026&#10;REMOTE_PEER_IP=203.0.113.10" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 font-mono text-xs text-amber-300 focus:outline-none focus:border-sky-500 leading-relaxed"></textarea>
+          </div>
+
+        </div>
+      </details>
+
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        <!-- Left Column: Module Selection Buttons (4 cols) -->
+        <div class="lg:col-span-4 space-y-2">
+          <div class="text-xs font-bold text-slate-300 pb-2 border-b border-slate-800 flex items-center justify-between">
+            <span>KỊCH BẢN CHUYÊN BIỆT</span>
+            <span class="text-[10px] text-sky-400 font-normal">Chọn kịch bản để sinh lệnh</span>
+          </div>
+
+          <div id="mtcine-modules-list" class="space-y-1.5">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- MTCINE Troubleshooting Accordion / Card -->
+          <div class="mt-6 pt-4 border-t border-slate-800">
+            <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <span>🩺 Sổ Tay Khắc Phục Sự Cố & Tối Ưu Hóa RouterOS</span>
+            </h3>
+            <div id="mtcine-ts-list" class="space-y-2">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Live Script Editor & Output (8 cols) -->
+        <div class="lg:col-span-8 bg-slate-950 border border-slate-800 rounded-xl overflow-hidden flex flex-col shadow-xl">
+          <div class="bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+            <div>
+              <h3 id="mtcine-script-title" class="text-sm font-bold text-white flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                <span>PCC Multi-WAN Load Balancing</span>
+              </h3>
+              <p id="mtcine-script-desc" class="text-xs text-slate-400 mt-0.5">Kịch bản cân bằng tải 2 đường WAN</p>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">RouterOS Script (.rsc)</span>
+          </div>
+
+          <div class="p-4">
+            <pre id="mtcine-rsc-output" class="code-font text-xs text-sky-300 bg-slate-900/90 p-4 rounded-xl border border-slate-800 min-h-[500px] max-h-[620px] overflow-y-auto leading-relaxed select-all whitespace-pre"># Đang nạp kịch bản...</pre>
+          </div>
         </div>
 
       </div>

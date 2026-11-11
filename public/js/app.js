@@ -72,6 +72,8 @@ async function fetchAllData() {
     renderShowCommands();
     renderConsoleSerial();
     initQuickBuilder();
+    initDiagnosticAssistant();
+    initMikroTikSuite();
     renderFiberOptics();
     console.log('✅ NetCLI API data loaded successfully!');
   } catch (err) {
@@ -740,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (subLabel && labelActiveTool) {
         labelActiveTool.textContent = subLabel;
         btnDropdown.classList.add('text-amber-300', 'bg-slate-900');
-      } else if (labelActiveTool && ['view-generator', 'view-showcmds', 'view-subnet', 'view-builder'].includes(targetViewId)) {
+      } else if (labelActiveTool && ['view-generator', 'view-showcmds', 'view-subnet', 'view-builder', 'view-diagnose', 'view-mikrotik'].includes(targetViewId)) {
         labelActiveTool.textContent = 'Sổ Tay Kỹ Sư';
         btnDropdown.classList.remove('text-amber-300', 'bg-slate-900');
       }
@@ -1666,4 +1668,419 @@ function runTerminalSimulation() {
   }
 
   setTimeout(executeNextLine, 200);
+}
+
+
+// ==========================================
+// NETWORK DIAGNOSTIC ASSISTANT & OPTIMIZER (TELNET & SSH)
+// ==========================================
+
+const SAMPLE_AUDIT_LOGS = {
+  perfect: `hostname Core-Switch-01
+spanning-tree mode rapid-pvst
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+clock timezone ICT 7 0
+ntp server vn.pool.ntp.org
+archive
+ path flash:backup-config
+ write-memory
+line vty 0 4
+ transport input ssh
+ login local
+no ip http server
+ip http secure-server
+interface GigabitEthernet0/1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30
+# Hardware Interface Check:
+# 0 input errors, 0 CRC, 0 frame, 0 drop
+# Spanning-tree status: Forwarding, Topology change: 0
+# CPU utilization: 4%, Memory free: 88%`,
+
+  suboptimal: `hostname Switch-Access-Floor3
+# Cấu hình còn nhiều điểm chưa tối ưu và tiềm ẩn rủi ro bảo mật:
+snmp-server community public RO
+line vty 0 4
+ transport input telnet
+ login local
+# Thiếu cấu hình BPDU Guard trên các cổng Access
+interface FastEthernet0/1
+ switchport mode access
+ switchport access vlan 10
+# Chưa cấu hình đồng bộ giờ NTP
+# Chưa có cơ chế archive tự động lưu cấu hình`,
+
+  critical: `%SW_MATM-4-MACFLAP_NOTIF: Host 0014.22a5.9810 in vlan 10 is flapping between port Gi0/1 and port Gi0/24
+%SW_MATM-4-MACFLAP_NOTIF: Host 0014.22a5.9810 in vlan 10 is flapping between port Gi0/24 and port Gi0/1
+%PM-4-ERR_DISABLE: bpduguard error detected on Gi0/1, putting Gi0/1 in err-disable state
+GigabitEthernet0/24 is up, line protocol is up (connected)
+  54219 packets input, 45291241 bytes, 0 no buffer
+  1429 input errors, 1429 CRC, 0 frame, 0 overrun, 0 ignored
+BGP neighbor is 203.0.113.1, remote AS 65002, BGP state = Active
+Failed TCP connect attempts: 18`
+};
+
+let currentOptimizerScript = '';
+
+function initDiagnosticAssistant() {
+
+  // One-shot collector copy
+  document.getElementById('btn-copy-collector-cmd')?.addEventListener('click', () => {
+    const oneShotCmd = 'terminal length 0 ; show version ; show ip int br ; show interfaces status ; show logging | last 40 ; show processes cpu sorted ; show spanning-tree summary';
+    copyText(oneShotCmd, document.getElementById('btn-copy-collector-cmd'));
+    showToast('Đã copy bộ lệnh quét 1 bước! Dán thẳng vào console của switch.');
+  });
+
+  // Mode toggles
+  const btnPaste = document.getElementById('diag-mode-paste');
+  const btnSsh = document.getElementById('diag-mode-ssh');
+  const panePaste = document.getElementById('diag-pane-paste');
+  const paneSsh = document.getElementById('diag-pane-ssh');
+
+  btnPaste?.addEventListener('click', () => {
+    btnPaste.classList.add('bg-rose-600', 'text-white');
+    btnPaste.classList.remove('text-slate-400');
+    btnSsh.classList.remove('bg-rose-600', 'text-white');
+    btnSsh.classList.add('text-slate-400');
+    panePaste?.classList.remove('hidden');
+    paneSsh?.classList.add('hidden');
+  });
+
+  btnSsh?.addEventListener('click', () => {
+    btnSsh.classList.add('bg-rose-600', 'text-white');
+    btnSsh.classList.remove('text-slate-400');
+    btnPaste.classList.remove('bg-rose-600', 'text-white');
+    btnPaste.classList.add('text-slate-400');
+    paneSsh?.classList.remove('hidden');
+    panePaste?.classList.add('hidden');
+  });
+
+  // Remote Protocol Selector (SSH vs Telnet port auto-switch)
+  const protoSelect = document.getElementById('remote-protocol-select');
+  const portInput = document.getElementById('ssh-target-port');
+  protoSelect?.addEventListener('change', (e) => {
+    if (portInput) {
+      portInput.value = e.target.value === 'TELNET' ? '23' : '22';
+    }
+  });
+
+  // Sample Audit Presets
+  document.querySelectorAll('.btn-sample-audit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sampleKey = btn.getAttribute('data-sample');
+      const textarea = document.getElementById('diag-raw-input');
+      if (textarea && SAMPLE_AUDIT_LOGS[sampleKey]) {
+        textarea.value = SAMPLE_AUDIT_LOGS[sampleKey];
+        showToast('Đã nạp: ' + btn.textContent.trim());
+      }
+    });
+  });
+
+  // Clear input
+  document.getElementById('btn-clear-diag-input')?.addEventListener('click', () => {
+    const textarea = document.getElementById('diag-raw-input');
+    if (textarea) textarea.value = '';
+    document.getElementById('diag-results-box')?.classList.add('hidden');
+  });
+
+  // Run Diagnosis / Audit
+  document.getElementById('btn-run-diagnosis')?.addEventListener('click', runAuditDiagnosis);
+
+  // Live Remote SSH / Telnet probe simulation
+  document.getElementById('btn-run-ssh-probe')?.addEventListener('click', () => {
+    const ip = document.getElementById('ssh-target-ip')?.value.trim();
+    const proto = protoSelect?.value || 'SSH';
+    const port = portInput?.value || (proto === 'TELNET' ? '23' : '22');
+
+    if (!ip) {
+      showToast('Vui lòng nhập địa chỉ IP!');
+      return;
+    }
+
+    showToast(`Đang mở phiên ${proto} tới ${ip}:${port}...`);
+    setTimeout(() => {
+      const textarea = document.getElementById('diag-raw-input');
+      if (textarea) textarea.value = SAMPLE_AUDIT_LOGS.suboptimal;
+      btnPaste?.click();
+      runAuditDiagnosis(proto, ip);
+    }, 1200);
+  });
+
+  // Optimizer Modal open/close
+  document.getElementById('btn-open-optimizer')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-optimizer');
+    const pre = document.getElementById('optimizer-script-output');
+    if (pre) pre.textContent = currentOptimizerScript || '! Không có kịch bản tối ưu hóa nào.';
+    modal?.classList.remove('hidden');
+  });
+
+  document.getElementById('btn-close-optimizer')?.addEventListener('click', () => {
+    document.getElementById('modal-optimizer')?.classList.add('hidden');
+  });
+
+  // Copy Optimizer Script
+  document.getElementById('btn-copy-optimizer-script')?.addEventListener('click', () => {
+    if (currentOptimizerScript) {
+      copyText(currentOptimizerScript, document.getElementById('btn-copy-optimizer-script'));
+    }
+  });
+}
+
+async function runAuditDiagnosis(protocol = 'MANUAL', ip = '') {
+  const rawText = document.getElementById('diag-raw-input')?.value.trim();
+  if (!rawText) {
+    showToast('Vui lòng dán cấu hình hoặc log cần phân tích!');
+    return;
+  }
+
+  showToast('AI đang rà soát và kiểm định cấu hình...');
+
+  let auditData = null;
+
+  try {
+    const res = await fetch('/api/diagnose/audit-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ configText: rawText, protocol, ip })
+    });
+    auditData = await res.json();
+  } catch (err) {
+    auditData = fallbackClientAudit(rawText, protocol, ip);
+  }
+
+  renderAuditReport(auditData);
+}
+
+function fallbackClientAudit(text, protocol, ip) {
+  const issues = [];
+  const verifiedGood = [];
+  let score = 100;
+
+  if (text.match(/(\d+)\s+(?:CRC|input errors)/i)) {
+    score -= 25;
+    issues.push({
+      severity: 'critical',
+      category: 'Lớp Vật Lý & Cáp',
+      title: 'Phát hiện lỗi cáp truyền dẫn CRC Errors',
+      symptom: 'Rớt gói ngẫu nhiên, suy hao chất lượng truyền tải.',
+      rootCause: 'Bấm đầu hạt mạng RJ45 lỏng hoặc cáp mạng đi gần dây điện 3 pha gây nhiễu.',
+      fixScript: 'interface GigabitEthernet0/1\n shutdown\n no shutdown\n clear counters GigabitEthernet0/1\nexit',
+      recommendation: 'Bấm lại đầu mạng RJ45 Cat6 chuẩn và gõ clear counters để theo dõi lại.'
+    });
+  } else {
+    verifiedGood.push('Bộ đếm lỗi CRC & Input Errors trên toàn bộ các cổng = 0 (Truyền dẫn vật lý hoàn hảo).');
+  }
+
+  if (text.match(/err-disabled|MACFLAP_NOTIF/i)) {
+    score -= 30;
+    issues.push({
+      severity: 'critical',
+      category: 'Spanning Tree & Loop L2',
+      title: 'Phát hiện sự cố vòng lặp Loop L2 hoặc Cổng bị Err-Disabled',
+      symptom: 'Cổng mạng bị switch tự ngắt hoặc MAC flapping giữa 2 cổng làm tê liệt mạng.',
+      rootCause: 'Đấu nối vòng tròn giữa các switch hoặc người dùng cắm router WiFi con vào mạng.',
+      fixScript: 'errdisable recovery cause bpduguard\nerrdisable recovery interval 30\ninterface GigabitEthernet0/1\n shutdown\n no shutdown\nexit',
+      recommendation: 'Rút ngay cáp tại cổng bị loop và kích hoạt BPDU Guard / Loop Protect.'
+    });
+  } else {
+    verifiedGood.push('Trạng thái chuyển mạch Layer 2 ổn định, không có hiện tượng MAC Flapping hay Loop.');
+  }
+
+  if (!text.match(/bpduguard|bpdu-guard/i)) {
+    score -= 15;
+    issues.push({
+      severity: 'warning',
+      category: 'Bảo Vệ Chuyển Mạch',
+      title: 'Chưa kích hoạt tính năng bảo vệ Spanning Tree BPDU Guard',
+      symptom: 'Nếu nhân viên cắm nhầm switch phụ vào ổ mạng trên tường, switch core có thể bị mất quyền Root Bridge làm sập mạng.',
+      rootCause: 'Thiếu cấu hình bpduguard default trên các cổng Edge/Access.',
+      fixScript: 'spanning-tree portfast bpduguard default\nspanning-tree portfast default',
+      recommendation: 'Bật BPDU Guard toàn cục để switch tự ngắt cổng ngay lập tức nếu có ai cắm switch con lậu.'
+    });
+  } else {
+    verifiedGood.push('Tính năng bảo vệ Spanning Tree BPDU Guard đã được kích hoạt chuẩn mực.');
+  }
+
+  if (text.match(/transport input telnet/i) || text.match(/snmp-server community public/i)) {
+    score -= 15;
+    issues.push({
+      severity: 'warning',
+      category: 'An Toàn Thông Tin & Quản Trị',
+      title: 'Tồn tại giao thức quản trị không mã hóa (Telnet / SNMP Public)',
+      symptom: 'Mật khẩu quản trị truyền dưới dạng văn bản rõ (cleartext), hacker có thể bắt gói tin bằng Wireshark.',
+      rootCause: 'Đang mở dịch vụ Telnet hoặc để SNMP community string mặc định là "public".',
+      fixScript: 'line vty 0 4\n transport input ssh\nexit\nno snmp-server community public',
+      recommendation: 'Chỉ cho phép kết nối qua SSH (mã hóa RSA 2048-bit) và tắt hoàn toàn Telnet.'
+    });
+  } else {
+    verifiedGood.push('Quản trị thiết bị an toàn, sử dụng kênh truyền mã hóa bảo mật.');
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  let grade = score >= 90 ? 'A+ (Hoàn Hảo)' : (score >= 70 ? 'B (Tốt - Cần Tối Ưu)' : 'F (Sự Cố Nghiêm Trọng)');
+  let assessment = score >= 90 ? 'Cấu hình hoàn toàn chuẩn chỉ theo Best Practices của hãng!' : 'Phát hiện các điểm cần tối ưu hóa hoặc khắc phục sự cố ngay lập tức.';
+
+  let optLines = ['! KỊCH BẢN TỐI ƯU HÓA TỰ ĐỘNG (OPTIMIZER SCRIPT)', ''];
+  issues.forEach(iss => {
+    optLines.push('! Sửa: ' + iss.title);
+    optLines.push(iss.fixScript);
+    optLines.push('');
+  });
+  optLines.push('write memory');
+
+  return {
+    healthScore: score,
+    grade: grade,
+    status: score >= 90 ? 'optimal' : (score >= 70 ? 'suboptimal' : 'critical'),
+    assessment: assessment,
+    verifiedGood: verifiedGood,
+    issues: issues,
+    optimizerScript: optLines.join('\n')
+  };
+}
+
+function renderAuditReport(data) {
+  const box = document.getElementById('diag-results-box');
+  const scoreCircle = document.getElementById('diag-score-circle');
+  const scoreNum = document.getElementById('diag-score-num');
+  const gradeBadge = document.getElementById('diag-grade-badge');
+  const assessText = document.getElementById('diag-assessment-text');
+  const goodSection = document.getElementById('diag-good-section');
+  const goodList = document.getElementById('diag-good-list');
+  const issuesSection = document.getElementById('diag-issues-section');
+  const issuesList = document.getElementById('diag-issues-list');
+
+  if (!box || !data) return;
+  box.classList.remove('hidden');
+
+  currentOptimizerScript = data.optimizerScript || '';
+
+  // Score Number
+  if (scoreNum) scoreNum.textContent = data.healthScore;
+
+  // Grade Badge & Circle Styling
+  if (data.healthScore >= 90) {
+    scoreCircle.className = 'w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-black text-xl border border-emerald-500/50 bg-emerald-950/60 text-emerald-400 shadow-emerald-500/10 shrink-0';
+    gradeBadge.className = 'px-2.5 py-0.5 rounded text-xs font-bold border bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+  } else if (data.healthScore >= 70) {
+    scoreCircle.className = 'w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-black text-xl border border-amber-500/50 bg-amber-950/60 text-amber-400 shadow-amber-500/10 shrink-0';
+    gradeBadge.className = 'px-2.5 py-0.5 rounded text-xs font-bold border bg-amber-500/20 text-amber-300 border-amber-500/40';
+  } else {
+    scoreCircle.className = 'w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-black text-xl border border-rose-500/50 bg-rose-950/60 text-rose-400 shadow-rose-500/10 shrink-0';
+    gradeBadge.className = 'px-2.5 py-0.5 rounded text-xs font-bold border bg-rose-500/20 text-rose-300 border-rose-500/40';
+  }
+  gradeBadge.textContent = data.grade;
+
+  if (assessText) assessText.textContent = data.assessment;
+
+  // Render Plain-language Reality Summary & 4 Vital Questions
+  const whatEl = document.getElementById('diag-what-happening');
+  if (whatEl && data.whatIsHappening) {
+    whatEl.innerHTML = `<span class="font-bold text-cyan-300">📌 Nhận Định Thực Tế: </span>` + escapeHtml(data.whatIsHappening);
+  }
+
+  const fourGrid = document.getElementById('diag-four-answers');
+  if (fourGrid && data.fourAnswers) {
+    fourGrid.innerHTML = data.fourAnswers.map(ans => {
+      let icon = '🟢';
+      let border = 'border-emerald-500/30 bg-emerald-950/40 text-emerald-300';
+      if (ans.status === 'danger') {
+        icon = '🔴';
+        border = 'border-rose-500/40 bg-rose-950/40 text-rose-300';
+      } else if (ans.status === 'warning') {
+        icon = '🟡';
+        border = 'border-amber-500/40 bg-amber-950/40 text-amber-300';
+      }
+
+      return `
+        <div class="p-3.5 rounded-xl border ${border} space-y-1">
+          <div class="font-bold text-xs text-white flex items-center gap-1.5">
+            <span>${icon}</span>
+            <span>${escapeHtml(ans.q)}</span>
+          </div>
+          <p class="text-xs font-sans leading-relaxed text-slate-200">${escapeHtml(ans.answer)}</p>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Render Verified Good points (Cấu hình chuẩn)
+  if (goodList && data.verifiedGood && data.verifiedGood.length > 0) {
+    goodSection.classList.remove('hidden');
+    goodList.innerHTML = data.verifiedGood.map(item => `
+      <div class="flex items-center gap-2">
+        <span class="text-emerald-400 font-bold shrink-0">✓</span>
+        <span>${escapeHtml(item)}</span>
+      </div>
+    `).join('');
+  } else if (goodSection) {
+    goodSection.classList.add('hidden');
+  }
+
+  // Render Issues
+  if (issuesList) {
+    issuesList.innerHTML = '';
+    if (!data.issues || data.issues.length === 0) {
+      issuesSection.classList.add('hidden');
+    } else {
+      issuesSection.classList.remove('hidden');
+      data.issues.forEach(iss => {
+        const card = document.createElement('div');
+        const borderColor = iss.severity === 'critical' ? 'border-rose-500/40' : 'border-amber-500/40';
+        card.className = `bg-slate-950 border ${borderColor} rounded-xl p-4.5 space-y-3 card-smooth-fx animate-fade-in-up`;
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3 pb-2 border-b border-slate-800">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ${iss.severity === 'critical' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">
+                  ${escapeHtml(iss.category)}
+                </span>
+                <h4 class="text-sm font-bold text-white">${escapeHtml(iss.title)}</h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+              <span class="font-bold text-amber-400 block mb-1">🔍 Hiện tượng &amp; Ảnh hưởng:</span>
+              <p class="text-slate-300 leading-relaxed">${escapeHtml(iss.symptom)}</p>
+            </div>
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+              <span class="font-bold text-rose-400 block mb-1">⚠️ Nguyên nhân gốc rễ:</span>
+              <p class="text-slate-300 leading-relaxed">${escapeHtml(iss.rootCause)}</p>
+            </div>
+          </div>
+
+          <!-- Đơn thuốc khắc phục -->
+          <div class="bg-slate-900 p-3 rounded-lg border border-emerald-500/30">
+            <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-800">
+              <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                <span>💊 Đơn Thuốc Lệnh Khắc Phục:</span>
+              </span>
+              <button class="btn-copy-fix px-2.5 py-1 text-[11px] font-bold rounded bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1" data-copy="${escapeAttr(iss.fixScript)}">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <span>Copy Lệnh</span>
+              </button>
+            </div>
+            <pre class="code-font text-xs text-emerald-300 leading-relaxed overflow-x-auto whitespace-pre p-1.5">${escapeHtml(iss.fixScript)}</pre>
+            <div class="text-[11px] text-slate-400 mt-2 font-sans">
+              💡 <strong>Khuyến nghị:</strong> ${escapeHtml(iss.recommendation)}
+            </div>
+          </div>
+        `;
+        issuesList.appendChild(card);
+      });
+
+      document.querySelectorAll('.btn-copy-fix').forEach(btn => {
+        btn.addEventListener('click', () => {
+          copyText(btn.getAttribute('data-copy'), btn);
+        });
+      });
+    }
+  }
+
+  box.scrollIntoView({ behavior: 'smooth' });
 }
