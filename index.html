@@ -36,6 +36,73 @@
     ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #334155; }
     .code-font { font-family: 'Fira Code', monospace; }
+
+    /* Modern Fluid Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulseLogoGlow {
+      0%, 100% {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.25), 0 0 30px rgba(6, 182, 212, 0.15);
+      }
+      50% {
+        box-shadow: 0 0 25px rgba(16, 185, 129, 0.45), 0 0 40px rgba(6, 182, 212, 0.3);
+      }
+    }
+
+    @keyframes shimmerSheen {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    @keyframes modalScaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .logo-pulse-glow {
+      animation: pulseLogoGlow 3s infinite ease-in-out;
+    }
+
+    .modal-anim {
+      animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Interactive Card Hover FX */
+    .card-smooth-fx {
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card-smooth-fx:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px -10px rgba(16, 185, 129, 0.12), 0 4px 12px -2px rgba(16, 185, 129, 0.08);
+      border-color: rgba(51, 65, 85, 0.9);
+    }
+
+    /* Button Press Micro-interaction */
+    .btn-interactive {
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-interactive:active {
+      transform: scale(0.95);
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white">
@@ -51,7 +118,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
       <!-- Logo & Brand -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/25 font-mono font-bold text-xl">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center text-white shadow-lg font-mono font-bold text-xl logo-pulse-glow transition-transform hover:scale-105">
           &gt;_
         </div>
         <div>
@@ -380,7 +447,7 @@
 
   <!-- MODAL: ROSETTA STONE COMPARISON TABLE -->
   <div id="modal-rosetta" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden modal-anim">
       <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
         <div>
           <h3 class="text-base font-bold text-white flex items-center gap-2">
@@ -422,7 +489,7 @@
 
   <!-- MODAL: THÊM HÃNG / LỆNH TÙY BIẾN -->
   <div id="modal-custom" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-xl w-full flex flex-col overflow-hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-xl w-full flex flex-col overflow-hidden modal-anim">
       <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
         <div>
           <h3 class="text-base font-bold text-white flex items-center gap-2">
@@ -1712,7 +1779,7 @@
         matchedCount++;
 
         const card = document.createElement('div');
-        card.className = 'bg-slate-950 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition p-4 flex flex-col gap-3';
+        card.className = 'bg-slate-950 border border-slate-800 rounded-xl overflow-hidden card-smooth-fx animate-fade-in-up p-4 flex flex-col gap-3';
 
         // Vendor commands row
         const vendorsList = [
@@ -1772,7 +1839,7 @@
       // Attach copy listeners
       document.querySelectorAll('.btn-copy-sh').forEach(btn => {
         btn.addEventListener('click', () => {
-          copyText(btn.getAttribute('data-copy'));
+          copyText(btn.getAttribute('data-copy'), btn);
         });
       });
     }
@@ -1847,7 +1914,20 @@
     }
 
     // Copy to clipboard
-    function copyText(text) {
+    function copyText(text, btnElement = null) {
+      if (btnElement) {
+        const origContent = btnElement.innerHTML;
+        btnElement.classList.add('scale-95', 'bg-emerald-600', 'text-white');
+        btnElement.innerHTML = `
+          <svg class="w-3.5 h-3.5 text-white animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+          <span class="font-bold">Đã Copy!</span>
+        `;
+        setTimeout(() => {
+          btnElement.innerHTML = origContent;
+          btnElement.classList.remove('scale-95', 'bg-emerald-600', 'text-white');
+        }, 1200);
+      }
+
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
           showToast('Đã copy đoạn lệnh vào clipboard!');
@@ -1932,7 +2012,7 @@
         matchedTasks++;
 
         const card = document.createElement('div');
-        card.className = 'bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm transition hover:border-slate-700';
+        card.className = 'bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm card-smooth-fx animate-fade-in-up';
 
         const categoryBadge = {
           l2: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -2052,7 +2132,7 @@
 
       document.querySelectorAll('.btn-copy-vendor').forEach(btn => {
         btn.addEventListener('click', () => {
-          copyText(btn.getAttribute('data-copy'));
+          copyText(btn.getAttribute('data-copy'), btn);
         });
       });
 
@@ -2124,7 +2204,7 @@
       container.innerHTML = '';
       RECOVERY_PLAYBOOK_DATA.forEach(item => {
         const card = document.createElement('div');
-        card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition';
+        card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between card-smooth-fx animate-fade-in-up';
 
         let stepsHtml = item.steps.map(s => {
           return `<li class="text-xs text-slate-300 leading-relaxed">${escapeHtml(s)}</li>`;
@@ -2150,7 +2230,7 @@
 
       document.querySelectorAll('.btn-copy-recovery').forEach(btn => {
         btn.addEventListener('click', () => {
-          copyText(btn.getAttribute('data-copy'));
+          copyText(btn.getAttribute('data-copy'), btn);
         });
       });
     }
@@ -2252,25 +2332,25 @@
       // Render cards
       const container = document.getElementById('calc-results');
       container.innerHTML = `
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between card-smooth-fx animate-fade-in-up">
           <div class="text-xs text-slate-400 font-medium">Địa chỉ Mạng (Network ID)</div>
           <div class="text-base font-mono font-bold text-cyan-400 select-all mt-1">${netStr} /${prefix}</div>
           <div class="text-[11px] text-slate-500 mt-2">Dùng để khai báo Route &amp; OSPF network</div>
         </div>
 
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between card-smooth-fx animate-fade-in-up">
           <div class="text-xs text-slate-400 font-medium">Subnet Mask Chuẩn</div>
           <div class="text-base font-mono font-bold text-emerald-400 select-all mt-1">${maskStr}</div>
           <div class="text-[11px] text-slate-500 mt-2">Dùng cho Interface IP &amp; Static Route</div>
         </div>
 
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between card-smooth-fx animate-fade-in-up">
           <div class="text-xs text-slate-400 font-medium">Cisco/Huawei Wildcard Mask</div>
           <div class="text-base font-mono font-bold text-amber-400 select-all mt-1">${wildcardStr}</div>
           <div class="text-[11px] text-slate-500 mt-2">Bắt buộc khi cấu hình OSPF &amp; ACL</div>
         </div>
 
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between card-smooth-fx animate-fade-in-up">
           <div class="text-xs text-slate-400 font-medium">Địa chỉ Broadcast</div>
           <div class="text-base font-mono font-bold text-rose-400 select-all mt-1">${bcastStr}</div>
           <div class="text-[11px] text-slate-500 mt-2">Địa chỉ quảng bá toàn mạng</div>
@@ -2282,13 +2362,13 @@
           <div class="text-[11px] text-slate-500 mt-2">Dải IP hợp lệ để cấp cho PC, Server, Camera, AP</div>
         </div>
 
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between card-smooth-fx animate-fade-in-up">
           <div class="text-xs text-slate-400 font-medium">Số Lượng Máy Khả Dụng (Usable Hosts)</div>
           <div class="text-base font-mono font-bold text-purple-400 mt-1">${totalHosts.toLocaleString()} Hosts</div>
           <div class="text-[11px] text-slate-500 mt-2">Tổng số máy con tối đa cắm vào subnet</div>
         </div>
 
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between card-smooth-fx animate-fade-in-up">
           <div class="text-xs text-slate-400 font-medium">Phân Loại Lớp Mạng (Class)</div>
           <div class="text-base font-mono font-bold text-sky-400 mt-1">${getIpClass(ipStr)}</div>
           <div class="text-[11px] text-slate-500 mt-2">${isPrivateIp(ipStr) ? 'Địa chỉ Private (Nội bộ RFC 1918)' : 'Địa chỉ Public (Internet)'}</div>
@@ -2387,6 +2467,9 @@
           const targetPanel = document.getElementById(targetViewId);
           if (targetPanel) {
             targetPanel.classList.remove('hidden');
+            targetPanel.classList.remove('animate-fade-in-up');
+            void targetPanel.offsetWidth; // trigger reflow
+            targetPanel.classList.add('animate-fade-in-up');
           }
         });
       });
