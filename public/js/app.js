@@ -71,6 +71,7 @@ async function fetchAllData() {
     renderCards();
     renderShowCommands();
     renderConsoleSerial();
+    initQuickBuilder();
     renderFiberOptics();
     console.log('✅ NetCLI API data loaded successfully!');
   } catch (err) {
@@ -739,7 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (subLabel && labelActiveTool) {
         labelActiveTool.textContent = subLabel;
         btnDropdown.classList.add('text-amber-300', 'bg-slate-900');
-      } else if (labelActiveTool && ['view-generator', 'view-showcmds', 'view-subnet'].includes(targetViewId)) {
+      } else if (labelActiveTool && ['view-generator', 'view-showcmds', 'view-subnet', 'view-builder'].includes(targetViewId)) {
         labelActiveTool.textContent = 'Sổ Tay Kỹ Sư';
         btnDropdown.classList.remove('text-amber-300', 'bg-slate-900');
       }
@@ -1262,4 +1263,407 @@ function renderAdminTasks() {
       }
     });
   });
+}
+
+
+// ==========================================
+// QUICK CONFIG BUILDER & TERMINAL SIMULATOR
+// ==========================================
+let selectedBuilderTaskIds = new Set(['vlan-create', 'access-port', 'admin-ssh', 'save-backup']);
+let currentBuilderVendor = 'cisco';
+let builderFeatureSearch = '';
+
+function initQuickBuilder() {
+  renderBuilderChecklist();
+  updateGeneratedScript();
+
+  // Vendor selector change
+  const vendorSelect = document.getElementById('builder-vendor-select');
+  if (vendorSelect) {
+    vendorSelect.addEventListener('change', (e) => {
+      currentBuilderVendor = e.target.value;
+      const vInfo = VENDORS_INFO[currentBuilderVendor];
+      const pill = document.getElementById('builder-vendor-pill');
+      if (pill) pill.textContent = vInfo ? vInfo.name : currentBuilderVendor.toUpperCase();
+      updateGeneratedScript();
+    });
+  }
+
+  // Feature search filter
+  const searchInput = document.getElementById('builder-feature-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      builderFeatureSearch = e.target.value.toLowerCase().trim();
+      renderBuilderChecklist();
+    });
+  }
+
+  // Preset Buttons
+  document.getElementById('btn-preset-access')?.addEventListener('click', () => {
+    selectedBuilderTaskIds = new Set(['vlan-create', 'access-port', 'admin-ssh', 'save-backup']);
+    renderBuilderChecklist();
+    updateGeneratedScript();
+    showToast('Đã chọn mẫu Switch Access!');
+  });
+
+  document.getElementById('btn-preset-core')?.addEventListener('click', () => {
+    selectedBuilderTaskIds = new Set(['vlan-create', 'svi-gateway', 'static-route', 'ospf-single-area', 'dhcp-server-pool', 'admin-ssh', 'save-backup']);
+    renderBuilderChecklist();
+    updateGeneratedScript();
+    showToast('Đã chọn mẫu Switch Core L3!');
+  });
+
+  document.getElementById('btn-preset-security')?.addEventListener('click', () => {
+    selectedBuilderTaskIds = new Set(['voice-vlan-phone', 'dhcp-snooping-dai', 'snmpv3-secure-monitoring', 'third-party-sfp-unlock', 'save-backup']);
+    renderBuilderChecklist();
+    updateGeneratedScript();
+    showToast('Đã chọn mẫu Chuẩn An Ninh!');
+  });
+
+  document.getElementById('btn-builder-clear')?.addEventListener('click', () => {
+    selectedBuilderTaskIds.clear();
+    renderBuilderChecklist();
+    updateGeneratedScript();
+    showToast('Đã bỏ chọn toàn bộ!');
+  });
+
+  // Toggle params drawer
+  document.getElementById('btn-toggle-builder-params')?.addEventListener('click', () => {
+    const box = document.getElementById('builder-params-box');
+    const label = document.getElementById('label-builder-params');
+    if (box) {
+      box.classList.toggle('hidden');
+      if (label) {
+        label.textContent = box.classList.contains('hidden') ? 'Bộ Thông Số Động Dự Án (Đang ẩn - Bấm để mở)' : 'Bộ Thông Số Động Dự Án (Đang mở)';
+      }
+    }
+  });
+
+  // Builder Params Sync button
+  document.getElementById('btn-builder-sync-params')?.addEventListener('click', () => {
+    // Copy bparam to param
+    const mappings = [
+      ['bparam-vlan-id', 'param-vlan-id'],
+      ['bparam-vlan-name', 'param-vlan-name'],
+      ['bparam-access-port', 'param-access-port'],
+      ['bparam-trunk-port', 'param-trunk-port'],
+      ['bparam-ip-cidr', 'param-ip-cidr'],
+      ['bparam-nexthop', 'param-nexthop'],
+      ['bparam-user', 'param-user'],
+      ['bparam-pass', 'param-pass'],
+      ['bparam-subnet', 'param-subnet'],
+      ['bparam-mask', 'param-mask'],
+      ['bparam-lag-id', 'param-lag-id']
+    ];
+    mappings.forEach(([bId, pId]) => {
+      const bVal = document.getElementById(bId)?.value;
+      const pEl = document.getElementById(pId);
+      if (bVal && pEl) pEl.value = bVal;
+    });
+    updateGeneratedScript();
+    renderCards();
+    showToast('Đã cập nhật thông số động dự án!');
+  });
+
+  // Live input change on bparam inputs
+  const bParamIds = [
+    'bparam-vlan-id', 'bparam-vlan-name', 'bparam-access-port', 'bparam-trunk-port',
+    'bparam-ip-cidr', 'bparam-nexthop', 'bparam-user', 'bparam-pass', 'bparam-subnet',
+    'bparam-mask', 'bparam-lag-id'
+  ];
+  bParamIds.forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => {
+      updateGeneratedScript();
+    });
+  });
+
+  // Tab switcher: Script vs Sandbox
+  const tabScript = document.getElementById('tab-btn-script');
+  const tabSandbox = document.getElementById('tab-btn-sandbox');
+  const paneScript = document.getElementById('pane-builder-script');
+  const paneSandbox = document.getElementById('pane-builder-sandbox');
+
+  tabScript?.addEventListener('click', () => {
+    tabScript.classList.add('bg-emerald-600', 'text-white');
+    tabScript.classList.remove('text-slate-400');
+    tabSandbox.classList.remove('bg-emerald-600', 'text-white');
+    tabSandbox.classList.add('text-slate-400');
+    paneScript?.classList.remove('hidden');
+    paneSandbox?.classList.add('hidden');
+  });
+
+  tabSandbox?.addEventListener('click', () => {
+    tabSandbox.classList.add('bg-emerald-600', 'text-white');
+    tabSandbox.classList.remove('text-slate-400');
+    tabScript.classList.remove('bg-emerald-600', 'text-white');
+    tabScript.classList.add('text-slate-400');
+    paneSandbox?.classList.remove('hidden');
+    paneScript?.classList.add('hidden');
+  });
+
+  // Copy builder script
+  document.getElementById('btn-copy-builder-script')?.addEventListener('click', () => {
+    const pre = document.getElementById('builder-script-output');
+    if (pre) copyText(pre.textContent, document.getElementById('btn-copy-builder-script'));
+  });
+
+  // Download .cfg file
+  document.getElementById('btn-download-builder-cfg')?.addEventListener('click', () => {
+    const text = document.getElementById('builder-script-output')?.textContent || '';
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `config_${currentBuilderVendor}_${Date.now()}.cfg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('Đã tải file kịch bản cấu hình .cfg!');
+  });
+
+  // Terminal Simulator Simulation button
+  document.getElementById('btn-run-simulation')?.addEventListener('click', runTerminalSimulation);
+  document.getElementById('btn-clear-sandbox')?.addEventListener('click', () => {
+    const screen = document.getElementById('terminal-screen');
+    if (screen) {
+      screen.innerHTML = `
+        <div class="text-slate-500">Terminal cleared. Connected to virtual console [115200 8-N-1].</div>
+        <div class="text-emerald-400 mt-2 font-bold" id="terminal-prompt">Switch# <span class="animate-pulse">_</span></div>
+      `;
+    }
+  });
+}
+
+function renderBuilderChecklist() {
+  const container = document.getElementById('builder-checklist-container');
+  if (!container || !CORE_TASKS.length) return;
+  container.innerHTML = '';
+
+  let countSelected = 0;
+
+  const categoryNames = {
+    l2: 'L2 Switching',
+    l3: 'L3 Routing & FHRP',
+    dynamic: 'Định Tuyến Động',
+    services: 'Dịch Vụ Mạng',
+    sec: 'Bảo Mật & NAT',
+    vpn: 'VPN Tunnels',
+    mgmt: 'Quản Trị & Lưu',
+    ts: 'Troubleshoot',
+    hw: 'Phần Cứng & SFP'
+  };
+
+  CORE_TASKS.forEach(task => {
+    if (builderFeatureSearch) {
+      const matchTitle = task.title.toLowerCase().includes(builderFeatureSearch);
+      const matchDesc = task.desc.toLowerCase().includes(builderFeatureSearch);
+      if (!matchTitle && !matchDesc) return;
+    }
+
+    const isChecked = selectedBuilderTaskIds.has(task.id);
+    if (isChecked) countSelected++;
+
+    const item = document.createElement('label');
+    item.className = `flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition select-none ${isChecked ? 'bg-slate-900 border-emerald-500/50 text-white' : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'}`;
+
+    item.innerHTML = `
+      <input type="checkbox" class="builder-cb mt-1 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500 cursor-pointer" data-id="${escapeAttr(task.id)}" ${isChecked ? 'checked' : ''}>
+      <div class="flex-1">
+        <div class="flex items-center justify-between gap-1">
+          <span class="font-semibold text-xs text-white">${escapeHtml(task.title)}</span>
+          <span class="text-[9px] px-1.5 py-0.2 rounded uppercase font-bold text-slate-400 bg-slate-800">${escapeHtml(categoryNames[task.category] || task.category)}</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">${escapeHtml(task.desc)}</p>
+      </div>
+    `;
+
+    const cb = item.querySelector('.builder-cb');
+    cb.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        selectedBuilderTaskIds.add(task.id);
+      } else {
+        selectedBuilderTaskIds.delete(task.id);
+      }
+      renderBuilderChecklist();
+      updateGeneratedScript();
+    });
+
+    container.appendChild(item);
+  });
+
+  const countBadge = document.getElementById('builder-selected-count');
+  if (countBadge) countBadge.textContent = `${countSelected} Đã chọn`;
+}
+
+function getBuilderParams() {
+  const vlanId = document.getElementById('bparam-vlan-id')?.value || document.getElementById('param-vlan-id')?.value || '10';
+  const vlanName = document.getElementById('bparam-vlan-name')?.value || document.getElementById('param-vlan-name')?.value || 'DATA_LAN';
+  const accessPort = document.getElementById('bparam-access-port')?.value || document.getElementById('param-access-port')?.value || 'ge-0/0/1';
+  const trunkPort = document.getElementById('bparam-trunk-port')?.value || document.getElementById('param-trunk-port')?.value || 'ge-0/0/24';
+  const ipCidr = document.getElementById('bparam-ip-cidr')?.value || document.getElementById('param-ip-cidr')?.value || '192.168.10.1/24';
+  const nextHop = document.getElementById('bparam-nexthop')?.value || document.getElementById('param-nexthop')?.value || '192.168.1.1';
+  const user = document.getElementById('bparam-user')?.value || document.getElementById('param-user')?.value || 'itadmin';
+  const pass = document.getElementById('bparam-pass')?.value || document.getElementById('param-pass')?.value || 'NetAdmin@2026!';
+  const netmask = document.getElementById('bparam-mask')?.value || document.getElementById('param-mask')?.value || '255.255.255.0';
+  const subnet = document.getElementById('bparam-subnet')?.value || document.getElementById('param-subnet')?.value || '192.168.10.0';
+  const lagId = document.getElementById('bparam-lag-id')?.value || document.getElementById('param-lag-id')?.value || '1';
+
+  const ipAddr = ipCidr.split('/')[0] || '192.168.10.1';
+
+  return {
+    '{{VLAN_ID}}': vlanId,
+    '{{VLAN_NAME}}': vlanName,
+    '{{ACCESS_PORT}}': accessPort,
+    '{{TRUNK_PORT}}': trunkPort,
+    '{{IP_CIDR}}': ipCidr,
+    '{{IP_ADDR}}': ipAddr,
+    '{{NEXTHOP}}': nextHop,
+    '{{USER}}': user,
+    '{{PASS}}': pass,
+    '{{NETMASK}}': netmask,
+    '{{SUBNET}}': subnet,
+    '{{LAG_ID}}': lagId
+  };
+}
+
+function replaceBuilderParams(str) {
+  const params = getBuilderParams();
+  let res = str;
+  for (const [k, v] of Object.entries(params)) {
+    res = res.split(k).join(v);
+  }
+  return res;
+}
+
+function updateGeneratedScript() {
+  const outputPre = document.getElementById('builder-script-output');
+  const linesCountSpan = document.getElementById('builder-script-lines-count');
+  if (!outputPre) return;
+
+  if (selectedBuilderTaskIds.size === 0) {
+    outputPre.textContent = '# Chưa có tính năng nào được chọn. Hãy tick chọn các tính năng ở cột bên trái!';
+    if (linesCountSpan) linesCountSpan.textContent = '0 dòng lệnh';
+    return;
+  }
+
+  const vInfo = VENDORS_INFO[currentBuilderVendor] || { name: currentBuilderVendor.toUpperCase() };
+  let scriptLines = [];
+  const now = new Date().toISOString().substring(0, 10);
+
+  scriptLines.push(`! =========================================================`);
+  scriptLines.push(`! KỊCH BẢN CẤU HÌNH TỰ ĐỘNG CHO: ${vInfo.name.toUpperCase()}`);
+  scriptLines.push(`! Ngày sinh: ${now} | Thiết bị: NetCLI Workbench`);
+  scriptLines.push(`! Thông số: VLAN ${getBuilderParams()['{{VLAN_ID}}']} (${getBuilderParams()['{{VLAN_NAME}}']}) | Gateway: ${getBuilderParams()['{{IP_CIDR}}']}`);
+  scriptLines.push(`! =========================================================\n`);
+
+  let addedTasks = 0;
+
+  CORE_TASKS.forEach(task => {
+    if (selectedBuilderTaskIds.has(task.id)) {
+      const vData = task.vendors[currentBuilderVendor];
+      if (vData && vData.cmds && vData.cmds.length > 0) {
+        addedTasks++;
+        scriptLines.push(`! --- [${task.title}] ---`);
+        if (vData.note) {
+          scriptLines.push(`! Ghi chú: ${vData.note}`);
+        }
+        vData.cmds.forEach(c => {
+          scriptLines.push(replaceBuilderParams(c));
+        });
+        scriptLines.push(``); // empty line separator
+      }
+    }
+  });
+
+  const fullText = scriptLines.join('\n');
+  outputPre.textContent = fullText;
+  if (linesCountSpan) {
+    const totalLines = fullText.split('\n').filter(l => l.trim() && !l.trim().startsWith('!')).length;
+    linesCountSpan.textContent = `${totalLines} dòng lệnh thực thi (${addedTasks} tính năng)`;
+  }
+}
+
+// Terminal Interactive Simulation
+let isSimulating = false;
+
+function runTerminalSimulation() {
+  if (isSimulating) return;
+  const screen = document.getElementById('terminal-screen');
+  if (!screen) return;
+
+  const rawScript = document.getElementById('builder-script-output')?.textContent || '';
+  const lines = rawScript.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('!') && !l.startsWith('#'));
+
+  if (lines.length === 0) {
+    showToast('Vui lòng chọn ít nhất 1 tính năng để có lệnh chạy thử!');
+    return;
+  }
+
+  isSimulating = true;
+  screen.innerHTML = `
+    <div class="text-slate-400 font-bold border-b border-slate-800 pb-2">
+      [*] Khởi động phiên mô phỏng giả lập Console [Baud: 115200 8-N-1]...
+    </div>
+    <div class="text-emerald-400 mt-2 font-bold">Switch# <span class="text-slate-400 font-normal">paste commands below</span></div>
+  `;
+
+  let promptPrefix = 'Switch(config)#';
+  if (currentBuilderVendor === 'huawei') promptPrefix = '[Huawei]';
+  else if (currentBuilderVendor === 'juniper') promptPrefix = 'root@switch#';
+  else if (currentBuilderVendor === 'fortinet') promptPrefix = 'FortiGate (global) #';
+  else if (currentBuilderVendor === 'mikrotik') promptPrefix = '[admin@MikroTik] >';
+
+  let idx = 0;
+
+  function executeNextLine() {
+    if (idx >= lines.length) {
+      isSimulating = false;
+      const doneDiv = document.createElement('div');
+      doneDiv.className = 'mt-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-300 font-bold';
+      doneDiv.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span>✓</span>
+          <span>MÔ PHỎNG HOÀN TẤT THÀNH CÔNG!</span>
+        </div>
+        <div class="text-xs text-slate-300 font-normal mt-1">
+          Cú pháp hợp lệ 100%, không phát hiện lỗi xung đột. Bạn có thể tự tin copy toàn bộ kịch bản này vào cổng Console thiết bị thật!
+        </div>
+      `;
+      screen.appendChild(doneDiv);
+      screen.scrollTop = screen.scrollHeight;
+      return;
+    }
+
+    const currentLine = lines[idx];
+    idx++;
+
+    const lineDiv = document.createElement('div');
+    lineDiv.className = 'flex items-start gap-2 text-slate-100';
+    lineDiv.innerHTML = `
+      <span class="text-cyan-400 font-bold shrink-0">${promptPrefix}</span>
+      <span class="text-emerald-300 select-all font-mono">${escapeHtml(currentLine)}</span>
+    `;
+    screen.appendChild(lineDiv);
+
+    // Dynamic responses for realism
+    if (currentLine.includes('interface') || currentLine.includes('vlan')) {
+      promptPrefix = currentBuilderVendor === 'cisco' ? 'Switch(config-if)#' : promptPrefix;
+    } else if (currentLine.includes('exit') || currentLine.includes('quit') || currentLine.includes('end')) {
+      promptPrefix = 'Switch(config)#';
+    } else if (currentLine.includes('write memory') || currentLine.includes('copy run start')) {
+      const respDiv = document.createElement('div');
+      respDiv.className = 'text-slate-400 italic text-[11px] pl-4';
+      respDiv.textContent = 'Building configuration... [OK] Write to FLASH finished successfully.';
+      screen.appendChild(respDiv);
+    } else if (currentLine.includes('commit')) {
+      const respDiv = document.createElement('div');
+      respDiv.className = 'text-slate-400 italic text-[11px] pl-4';
+      respDiv.textContent = 'commit complete.';
+      screen.appendChild(respDiv);
+    }
+
+    screen.scrollTop = screen.scrollHeight;
+    setTimeout(executeNextLine, 120);
+  }
+
+  setTimeout(executeNextLine, 200);
 }
