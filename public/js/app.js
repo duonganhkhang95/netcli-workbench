@@ -720,12 +720,35 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-view-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const targetViewId = btn.getAttribute('data-view');
+      
+      // Update active states
       document.querySelectorAll('.nav-view-btn').forEach(b => {
-        b.classList.remove('bg-emerald-600', 'text-white', 'text-emerald-400', 'font-bold');
-        b.classList.add('text-slate-400');
+        b.classList.remove('bg-emerald-600', 'text-white', 'font-bold');
+        if (b.classList.contains('rounded-full')) {
+          b.classList.add('bg-slate-900', 'text-slate-300');
+        } else if (!b.closest('#dropdown-tools-menu')) {
+          b.classList.add('text-slate-400');
+        }
       });
-      btn.classList.add('bg-emerald-600', 'text-white', 'text-emerald-400', 'font-bold');
-      btn.classList.remove('text-slate-400');
+
+      btn.classList.add('bg-emerald-600', 'text-white', 'font-bold');
+      btn.classList.remove('text-slate-400', 'bg-slate-900');
+
+      // Update Dropdown label if clicked from inside dropdown
+      const subLabel = btn.querySelector('.font-semibold')?.textContent;
+      if (subLabel && labelActiveTool) {
+        labelActiveTool.textContent = subLabel;
+        btnDropdown.classList.add('text-amber-300', 'bg-slate-900');
+      } else if (labelActiveTool && ['view-generator', 'view-showcmds', 'view-subnet'].includes(targetViewId)) {
+        labelActiveTool.textContent = 'Sổ Tay Kỹ Sư';
+        btnDropdown.classList.remove('text-amber-300', 'bg-slate-900');
+      }
+
+      // Close dropdown if open
+      if (menuDropdown) {
+        menuDropdown.classList.add('hidden');
+        if (arrowDropdown) arrowDropdown.classList.remove('rotate-180');
+      }
 
       document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
       const targetPanel = document.getElementById(targetViewId);
@@ -737,6 +760,35 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+
+  // Dropdown Tools Toggle
+  const btnDropdown = document.getElementById('btn-dropdown-tools');
+  const menuDropdown = document.getElementById('dropdown-tools-menu');
+  const arrowDropdown = document.getElementById('icon-dropdown-arrow');
+  const labelActiveTool = document.getElementById('label-active-tool');
+
+  if (btnDropdown && menuDropdown) {
+    btnDropdown.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = menuDropdown.classList.contains('hidden');
+      if (isHidden) {
+        menuDropdown.classList.remove('hidden');
+        if (arrowDropdown) arrowDropdown.classList.add('rotate-180');
+      } else {
+        menuDropdown.classList.add('hidden');
+        if (arrowDropdown) arrowDropdown.classList.remove('rotate-180');
+      }
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!menuDropdown.contains(e.target) && !btnDropdown.contains(e.target)) {
+        menuDropdown.classList.add('hidden');
+        if (arrowDropdown) arrowDropdown.classList.remove('rotate-180');
+      }
+    });
+  }
 
   // Search input handler
   const searchInput = document.getElementById('search-input');

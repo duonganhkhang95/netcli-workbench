@@ -32,79 +32,113 @@
   </div>
 
   <!-- Header Navigation -->
-  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-      <!-- Logo & Brand -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center text-white shadow-lg font-mono font-bold text-xl logo-pulse-glow transition-transform hover:scale-105">
-          &gt;_
+    <!-- Header Navigation -->
+  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/80 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="h-16 flex items-center justify-between gap-3">
+        
+        <!-- Left: Logo & Brand -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center text-white shadow-md font-mono font-bold text-lg logo-pulse-glow transition-transform hover:scale-105 cursor-pointer" onclick="document.getElementById('nav-btn-generator').click()">
+            &gt;_
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-base font-bold text-white tracking-tight cursor-pointer" onclick="document.getElementById('nav-btn-generator').click()">NetCLI Workbench</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">v2.5 Enterprise</span>
+            </div>
+            <p class="text-[11px] text-slate-400 hidden xl:block">Cẩm nang CLI, Subnet, Port & Sổ tay cứu hộ đa hãng</p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-            NetCLI Workbench
-            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-300 border border-emerald-500/30">Enterprise Edition</span>
-          </h1>
-          <p class="text-xs text-slate-400 hidden sm:block">Trạm làm việc đa hãng: Cẩm nang CLI, Máy tính Subnet, Tra cứu Port & Sổ tay Recovery</p>
+
+        <!-- Center: Desktop Segmented Navigation (Clean, Balanced & Compact) -->
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80 text-xs font-semibold">
+          <button id="nav-btn-generator" class="nav-view-btn px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition flex items-center gap-1.5 shadow-sm" data-view="view-generator">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>Cấu Hình</span>
+          </button>
+          
+          <button id="nav-btn-showcmds" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-showcmds">
+            <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+            <span>Lệnh Show</span>
+          </button>
+          
+          <button id="nav-btn-subnet" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-subnet">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            <span>Tính Subnet</span>
+          </button>
+
+          <!-- Dropdown: Sổ Tay & Tiện Ích Mạng -->
+          <div class="relative" id="dropdown-tools-wrapper">
+            <button id="btn-dropdown-tools" type="button" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+              <span id="label-active-tool">Sổ Tay Kỹ Sư</span>
+              <svg class="w-3 h-3 text-slate-500 transition-transform duration-200" id="icon-dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+
+            <!-- Dropdown Menu items -->
+            <div id="dropdown-tools-menu" class="hidden absolute top-full left-0 mt-1.5 w-60 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl p-1.5 z-50 modal-anim">
+              <button id="nav-btn-console" class="nav-view-btn w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-console">
+                <span class="w-6 h-6 rounded-md bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">🔌</span>
+                <div>
+                  <div class="font-semibold text-white">Thông Số Console &amp; Cáp</div>
+                  <div class="text-[10px] text-slate-400">Baudrate, chân cáp, user mặc định</div>
+                </div>
+              </button>
+
+              <button id="nav-btn-fiber" class="nav-view-btn w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-fiber">
+                <span class="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">💡</span>
+                <div>
+                  <div class="font-semibold text-white">Cáp Quang &amp; SFP Unlock</div>
+                  <div class="text-[10px] text-slate-400">Ngưỡng dBm, mở khóa SFP ngoài</div>
+                </div>
+              </button>
+
+              <button id="nav-btn-ports" class="nav-view-btn w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-ports">
+                <span class="w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">📋</span>
+                <div>
+                  <div class="font-semibold text-white">Tra Cứu Port &amp; Protocol</div>
+                  <div class="text-[10px] text-slate-400">Port TCP/UDP cho ACL &amp; Firewall</div>
+                </div>
+              </button>
+
+              <button id="nav-btn-recovery" class="nav-view-btn w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-recovery">
+                <span class="w-6 h-6 rounded-md bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">🔑</span>
+                <div>
+                  <div class="font-semibold text-white">Password Recovery</div>
+                  <div class="text-[10px] text-slate-400">Sổ tay phá pass console 9 hãng</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Right: Action Buttons -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-rosetta" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 flex items-center gap-1.5 transition shadow-sm btn-interactive">
+            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <span class="hidden sm:inline">Đối Chiếu Lệnh</span>
+            <span class="sm:hidden">Đối chiếu</span>
+          </button>
+
+          <button id="btn-custom-add" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5 transition btn-interactive">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span class="hidden sm:inline">Thêm Lệnh Mới</span>
+            <span class="sm:hidden">+ Thêm</span>
+          </button>
         </div>
-      </div>
-
-      <!-- Main Navigation Tabs -->
-      <nav class="hidden lg:flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
-        <button id="nav-btn-generator" class="nav-view-btn px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition flex items-center gap-1.5" data-view="view-generator">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          <span>Cẩm Nang & Sinh Lệnh</span>
-        </button>
-        <button id="nav-btn-showcmds" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-showcmds">
-          <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-          <span>Bách Khoa Lệnh Show</span>
-        </button>
-        <button id="nav-btn-subnet" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-subnet">
-          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-          <span>Tính Subnet / CIDR</span>
-        </button>
-        <button id="nav-btn-ports" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-ports">
-          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-          <span>Tra Cứu Port Mạng</span>
-        </button>
-        <button id="nav-btn-recovery" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-recovery">
-          <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-          <span>Password Recovery</span>
-        </button>
-        <button id="nav-btn-console" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-console">
-          <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-          <span>Thông Số Console</span>
-        </button>
-        <button id="nav-btn-fiber" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-fiber">
-          <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-          <span>Quang &amp; SFP Unlock</span>
-        </button>
-      </nav>
-
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-2">
-        <button id="btn-rosetta" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-          <span class="hidden md:inline">Bảng Đối Chiếu</span>
-          <span class="md:hidden">Đối chiếu</span>
-        </button>
-
-        <button id="btn-custom-add" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-          <span class="hidden md:inline">Thêm Hãng / Lệnh</span>
-          <span class="md:hidden">+ Thêm</span>
-        </button>
       </div>
     </div>
 
-    <!-- Mobile Nav Bar -->
-    <div class="lg:hidden flex items-center justify-around bg-slate-950 border-t border-slate-800 text-xs py-2 px-1">
-      <button class="nav-view-btn px-2 py-1 rounded text-emerald-400 font-bold" data-view="view-generator">Cẩm Nang</button>
-      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-showcmds">Lệnh Show</button>
-      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-subnet">Tính Subnet</button>
-      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-ports">Port &amp; Protocol</button>
-      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-recovery">Password Reset</button>
-      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-console">Console</button>
-      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-fiber">Quang SFP</button>
+    <!-- Mobile Nav Bar: Smooth Touch-scrollable Pill Strip (Never wraps, never breaks!) -->
+    <div class="lg:hidden bg-slate-950/90 border-t border-slate-800/80 px-3 py-2 overflow-x-auto scrollbar-none flex items-center gap-2 text-xs font-medium whitespace-nowrap">
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-emerald-600 text-white font-bold transition shrink-0" data-view="view-generator">Cấu Hình</button>
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-showcmds">Lệnh Show</button>
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-subnet">Tính Subnet</button>
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-console">Console &amp; Cáp</button>
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-fiber">Quang SFP</button>
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-ports">Port Mạng</button>
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-recovery">Password Reset</button>
     </div>
   </header>
 
