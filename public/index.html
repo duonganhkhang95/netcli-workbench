@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetCLI Enterprise Workbench - Trạm Làm Việc Kỹ Sư Mạng Đa Hãng</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-16 opacity-0 transition-all duration-300 bg-emerald-600 text-white px-4 py-2.5 rounded-lg shadow-2xl flex items-center gap-2.5 text-sm font-medium border border-emerald-400/30 pointer-events-none">
+    <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+    <span id="toast-msg">Đã sao chép lệnh thành công!</span>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <!-- Logo & Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center text-white shadow-lg font-mono font-bold text-xl logo-pulse-glow transition-transform hover:scale-105">
+          &gt;_
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            NetCLI Workbench
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-300 border border-emerald-500/30">Enterprise Edition</span>
+          </h1>
+          <p class="text-xs text-slate-400 hidden sm:block">Trạm làm việc đa hãng: Cẩm nang CLI, Máy tính Subnet, Tra cứu Port & Sổ tay Recovery</p>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="hidden lg:flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+        <button id="nav-btn-generator" class="nav-view-btn px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition flex items-center gap-1.5" data-view="view-generator">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <span>Cẩm Nang & Sinh Lệnh</span>
+        </button>
+        <button id="nav-btn-showcmds" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-showcmds">
+          <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+          <span>Bách Khoa Lệnh Show</span>
+        </button>
+        <button id="nav-btn-subnet" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-subnet">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          <span>Tính Subnet / CIDR</span>
+        </button>
+        <button id="nav-btn-ports" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-ports">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          <span>Tra Cứu Port Mạng</span>
+        </button>
+        <button id="nav-btn-recovery" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5" data-view="view-recovery">
+          <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+          <span>Password Recovery</span>
+        </button>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btn-rosetta" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+          <span class="hidden md:inline">Bảng Đối Chiếu</span>
+          <span class="md:hidden">Đối chiếu</span>
+        </button>
+
+        <button id="btn-custom-add" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          <span class="hidden md:inline">Thêm Hãng / Lệnh</span>
+          <span class="md:hidden">+ Thêm</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Nav Bar -->
+    <div class="lg:hidden flex items-center justify-around bg-slate-950 border-t border-slate-800 text-xs py-2 px-1">
+      <button class="nav-view-btn px-2 py-1 rounded text-emerald-400 font-bold" data-view="view-generator">Cẩm Nang</button>
+      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-showcmds">Lệnh Show</button>
+      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-subnet">Tính Subnet</button>
+      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-ports">Port &amp; Protocol</button>
+      <button class="nav-view-btn px-2 py-1 rounded text-slate-400" data-view="view-recovery">Password Reset</button>
+    </div>
+  </header>
+
+  <!-- VIEW 1: CẨM NANG & SINH LỆNH CẤU HÌNH (MAIN WORKBENCH) -->
+  <main id="view-generator" class="view-panel max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+
+    <!-- Search & Vendor Select Filter Bar -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+      <!-- Search Input -->
+      <div class="relative flex-1">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <input 
+          id="search-input" 
+          type="text" 
+          placeholder="Tìm kiếm tác vụ (vd: vlan, trunk, ospf, bgp, dhcp, sfp optical, hsrp, nat, vpn, qinq)..." 
+          class="w-full bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 text-sm rounded-lg pl-10 pr-20 py-2.5 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+        >
+        <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-slate-500 font-mono">
+          <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px]">Ctrl+K</kbd>
+        </span>
+      </div>
+
+      <!-- Vendor Selector -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+        <label class="text-xs text-slate-400 whitespace-nowrap font-medium">Hãng thiết bị:</label>
+        <select id="vendor-filter" class="bg-slate-950 border border-slate-800 text-emerald-400 text-xs sm:text-sm font-semibold rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 transition">
+          <option value="ALL">★ Xem Tất Cả Các Hãng (Song Song)</option>
+          <option value="cisco">Cisco Catalyst (IOS / IOS-XE)</option>
+          <option value="ciscocbs">Cisco CBS (Business 250/350/550)</option>
+          <option value="juniper">Juniper Junos</option>
+          <option value="fortinet">Fortinet FortiOS</option>
+          <option value="huawei">Huawei VRP</option>
+          <option value="mikrotik">MikroTik RouterOS</option>
+          <option value="aruba">Aruba / HP (AOS-CX)</option>
+          <option value="ruijie">Ruijie Networks (RGOS / Reyee)</option>
+          <option value="edgecore">Edgecore Networks (ECS)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Live Parameters Bar -->
+    <details class="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden group">
+      <summary class="px-4 py-3 cursor-pointer flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-300 hover:text-emerald-400 hover:bg-slate-800/50 transition">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+          <span>Bộ Thông Số Động Dự Án (Thay đổi giá trị tại đây để tự động render vào toàn bộ câu lệnh mẫu)</span>
+        </div>
+        <span class="text-xs text-emerald-400 group-open:rotate-180 transition-transform">▼</span>
+      </summary>
+      <div class="p-4 border-t border-slate-800 bg-slate-950/60 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">VLAN ID:</label>
+          <input id="param-vlan-id" type="text" value="10" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">VLAN Name:</label>
+          <input id="param-vlan-name" type="text" value="DATA_LAN" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Access Port:</label>
+          <input id="param-access-port" type="text" value="ge-0/0/1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Trunk Port:</label>
+          <input id="param-trunk-port" type="text" value="ge-0/0/24" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">IP Gateway / CIDR:</label>
+          <input id="param-ip-cidr" type="text" value="192.168.10.1/24" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Next-Hop Gateway:</label>
+          <input id="param-nexthop" type="text" value="192.168.1.1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Admin Username:</label>
+          <input id="param-user" type="text" value="itadmin" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Admin Password:</label>
+          <input id="param-pass" type="text" value="NetAdmin@2026!" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Subnet Network:</label>
+          <input id="param-subnet" type="text" value="192.168.10.0" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Subnet Mask:</label>
+          <input id="param-mask" type="text" value="255.255.255.0" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">LACP Channel ID:</label>
+          <input id="param-lag-id" type="text" value="1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div class="flex items-end">
+          <button id="btn-reset-params" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-1.5 rounded transition">
+            Khôi phục mặc định
+          </button>
+        </div>
+      </div>
+    </details>
+
+    <!-- Category Tabs -->
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs sm:text-sm font-medium border-b border-slate-800">
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-emerald-500 text-emerald-400 bg-slate-900/60 font-semibold" data-cat="ALL">Tất cả (<span id="count-all">0</span>)</button>
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200" data-cat="l2">L2 Switching &amp; STP</button>
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200" data-cat="l3">L3 Routing &amp; FHRP</button>
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200" data-cat="dynamic">OSPF &amp; BGP</button>
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200" data-cat="services">DHCP, NTP &amp; Services</button>
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200" data-cat="sec">Security, ACL &amp; NAT</button>
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200" data-cat="vpn">VPN (IPsec / GRE)</button>
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200" data-cat="mgmt">Quản Trị, SSH &amp; Save</button>
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-transparent text-rose-400 hover:text-rose-300 flex items-center gap-1 font-semibold" data-cat="ts">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        <span>Troubleshoot Thực Chiến</span>
+      </button>
+      <button class="cat-tab px-3 py-2 rounded-t-lg border-b-2 border-transparent text-slate-400 hover:text-slate-200" data-cat="custom">Tùy Biến Của Tôi (<span id="count-custom">0</span>)</button>
+    </div>
+
+    <!-- Cards Container -->
+    <div id="cards-container" class="space-y-6"></div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden py-16 text-center">
+      <div class="w-12 h-12 mx-auto mb-3 text-slate-600">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      </div>
+      <p class="text-slate-400 font-medium">Không tìm thấy lệnh hoặc tác vụ nào khớp với từ khóa!</p>
+      <p class="text-xs text-slate-500 mt-1">Hãy thử tìm các từ khóa như: vlan, trunk, ospf, bgp, dhcp, hsrp, nat, sfp, loop, acl...</p>
+    </div>
+  </main>
+
+  <!-- VIEW 2: MÁY TÍNH SUBNET & WILDCARD MASK (CIDR & VLSM) -->
+  <section id="view-subnet" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">Công Cụ Tính Toán Subnet, CIDR &amp; Wildcard Mask Trực Tiếp</h2>
+          <p class="text-xs text-slate-400">Hỗ trợ tính toán dải IP khả dụng, địa chỉ mạng Network ID, Broadcast, và Wildcard mask (dành cho OSPF &amp; ACL của Cisco/Huawei)</p>
+        </div>
+      </div>
+
+      <!-- Input Form -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <div class="md:col-span-2">
+          <label class="block text-xs font-medium text-slate-300 mb-1">Địa chỉ IP &amp; Tiền tố CIDR (vd: 192.168.10.50/24 hoặc 10.50.0.1/22 hoặc 172.16.8.99/28):</label>
+          <div class="flex items-center gap-2">
+            <input id="calc-ip-input" type="text" value="192.168.10.50/24" placeholder="192.168.1.1/24" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2 font-mono text-emerald-300 focus:outline-none focus:border-cyan-500">
+            <button id="calc-btn-run" class="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-semibold text-xs whitespace-nowrap transition">
+              Tính Toán
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Chọn nhanh Subnet Mask phổ biến:</label>
+          <select id="calc-prefix-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-cyan-500 font-mono">
+            <!-- options generated by JS -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Result Grid -->
+      <div id="calc-results" class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEW 3: TRA CỨU PORT MẠNG & GIAO THỨC TIÊU CHUẨN -->
+  <section id="view-ports" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+      <div class="flex items-center justify-between flex-wrap gap-4 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white">Bảng Tra Cứu Số Cổng Port &amp; Giao Thức Mạng Chuẩn</h2>
+            <p class="text-xs text-slate-400">Tra cứu nhanh số cổng TCP/UDP khi cấu hình Firewall Policy, ACL, Port Forwarding (NAT)</p>
+          </div>
+        </div>
+
+        <div class="w-full sm:w-72">
+          <input id="port-search-input" type="text" placeholder="Tìm port hoặc tên giao thức (vd: 179, bgp, 514, radius)..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500">
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-lg border border-slate-800">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-950 text-slate-300 border-b border-slate-800 font-semibold">
+              <th class="p-3">Port</th>
+              <th class="p-3">Giao Thức (Protocol)</th>
+              <th class="p-3">Dịch Vụ (Service)</th>
+              <th class="p-3">Mục Đích Sử Dụng Trong Hạ Tầng Mạng</th>
+            </tr>
+          </thead>
+          <tbody id="ports-tbody" class="divide-y divide-slate-800/80 font-mono text-xs">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEW 4: SỔ TAY PASSWORD RECOVERY CONSOLE TỪNG HÃNG -->
+  <section id="view-recovery" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">Sổ Tay Phá / Khôi Phục Mật Khẩu Console Khi Bị Khóa (Password Recovery Playbook)</h2>
+          <p class="text-xs text-slate-400">Hướng dẫn từng bước thực hiện qua cổng Serial Console khi nhận thiết bị cũ hoặc quên mật khẩu Admin</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="recovery-cards-container">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+
+  <!-- VIEW 5: BÁCH KHOA TOÀN THƯ LỆNH SHOW / DISPLAY / GET / PRINT ĐA HÃNG -->
+  <section id="view-showcmds" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm">
+      <div class="flex items-center justify-between flex-wrap gap-4 mb-5">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              Bách Khoa Toàn Thư Lệnh SHOW / DISPLAY / GET / PRINT Đa Hãng
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">35+ Lệnh Thực Chiến</span>
+            </h2>
+            <p class="text-xs text-slate-400">Tra cứu đầy đủ mọi tùy chọn lệnh show/display khi kiểm tra trạng thái và vận hành hạ tầng mạng</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <input id="showcmd-search-input" type="text" placeholder="Tìm lệnh show (vd: trunk, neighbor, poe, sfp, arp, nat, bgp, mac, cpu)..." class="w-full sm:w-80 bg-slate-950 border border-slate-700 rounded-lg px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500">
+        </div>
+      </div>
+
+      <!-- Category Filter Tabs for Show Commands -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-2 text-xs font-medium border-b border-slate-800 mb-5">
+        <button class="showcmd-cat-tab px-3 py-1.5 rounded-lg bg-purple-600 text-white font-semibold transition" data-showcat="ALL">Tất Cả Lệnh Show (<span id="showcmd-count-all">0</span>)</button>
+        <button class="showcmd-cat-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-showcat="l2">L1/L2 &amp; Cổng Switch</button>
+        <button class="showcmd-cat-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-showcat="l3">L3 Routing &amp; ARP</button>
+        <button class="showcmd-cat-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-showcat="dynamic">OSPF &amp; BGP</button>
+        <button class="showcmd-cat-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-showcat="sec">DHCP, NAT &amp; VPN</button>
+        <button class="showcmd-cat-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-showcat="hw">Phần Cứng, Nguồn &amp; PoE</button>
+        <button class="showcmd-cat-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-showcat="sys">Hệ Thống, CPU &amp; Log</button>
+      </div>
+
+      <!-- Show Command Cards Grid -->
+      <div id="showcmds-container" class="space-y-4"></div>
+    </div>
+  </section>
+
+  <!-- MODAL: ROSETTA STONE COMPARISON TABLE -->
+  <div id="modal-rosetta" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden modal-anim">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            Bảng Đối Chiếu Cú Pháp Toàn Bộ Các Hãng (Multi-Vendor Rosetta Stone)
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">So sánh lệnh thực thi tương đương giữa 9 dòng thiết bị mạng hàng đầu</p>
+        </div>
+        <button id="btn-close-rosetta" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-950 text-slate-300 border-b border-slate-800 font-semibold text-[11px]">
+                <th class="p-3">Tác Vụ Thường Gặp</th>
+                <th class="p-3 text-emerald-400">Cisco Catalyst</th>
+                <th class="p-3 text-sky-400">Cisco CBS</th>
+                <th class="p-3 text-amber-400">Juniper Junos</th>
+                <th class="p-3 text-rose-400">Fortinet FortiOS</th>
+                <th class="p-3 text-blue-400">Huawei VRP</th>
+                <th class="p-3 text-purple-400">MikroTik RouterOS</th>
+                <th class="p-3 text-cyan-400">Ruijie RGOS</th>
+                <th class="p-3 text-teal-400">Edgecore ECS</th>
+              </tr>
+            </thead>
+            <tbody id="rosetta-tbody" class="divide-y divide-slate-800 font-mono text-[11px]"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="px-6 py-3 bg-slate-950/70 border-t border-slate-800 text-right">
+        <button id="btn-close-rosetta-bottom" class="px-4 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: THÊM HÃNG / LỆNH TÙY BIẾN -->
+  <div id="modal-custom" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-xl w-full flex flex-col overflow-hidden modal-anim">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Thêm Cấu Hình / Thương Hiệu Mới Vào Cẩm Nang
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Lưu lại kinh nghiệm thực tế hoặc hãng thiết bị mới mua sắm</p>
+        </div>
+        <button id="btn-close-custom" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Tên tác vụ / Tính năng:</label>
+          <input id="custom-title" type="text" placeholder="VD: Cấu hình DHCP Relay cho Dell OS10, Reset Pass VyOS..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Thương hiệu / Hãng:</label>
+            <input id="custom-vendor" type="text" placeholder="VD: Dell OS10, Extreme, Allied Telesis..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Nhóm danh mục:</label>
+            <select id="custom-category" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+              <option value="l2">L2 Switching &amp; STP</option>
+              <option value="l3">L3 Routing &amp; FHRP</option>
+              <option value="dynamic">OSPF &amp; BGP</option>
+              <option value="services">DHCP, NTP &amp; Services</option>
+              <option value="sec">Security, ACL &amp; NAT</option>
+              <option value="vpn">VPN (IPsec / GRE)</option>
+              <option value="mgmt">Quản Trị, SSH &amp; Save</option>
+              <option value="ts">Troubleshoot Thực Chiến</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Đoạn lệnh cấu hình (Mỗi lệnh một dòng):</label>
+          <textarea id="custom-commands" rows="5" placeholder="configure&#10;interface vlan 10&#10;ip address 192.168.10.1/24&#10;exit" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 font-mono text-emerald-400 focus:outline-none focus:border-emerald-500"></textarea>
+        </div>
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Ghi chú lưu ý khi console (Tùy chọn):</label>
+          <input id="custom-notes" type="text" placeholder="VD: Cần lưu ý cổng console baudrate 115200..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+        </div>
+      </div>
+
+      <div class="px-6 py-3 bg-slate-950/70 border-t border-slate-800 flex items-center justify-between">
+        <button id="btn-export-backup" class="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          Export Backup JSON
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="btn-cancel-custom" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">Hủy</button>
+          <button id="btn-save-custom" class="px-4 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">Lưu Vào Cẩm Nang</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-slate-900 bg-slate-950 py-4 text-center text-xs text-slate-500">
+    NetCLI Enterprise Workbench &bull; Hỗ trợ toàn diện Cisco Catalyst, Cisco CBS, Juniper, Fortinet, Huawei, MikroTik, Aruba, Ruijie &amp; Edgecore
+  </footer>
+
+  <!-- SCRIPT DATABASE & LOGIC -->
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+[
+  {
+    "vendor": "Cisco Catalyst (IOS / IOS-XE)",
+    "icon": "border-emerald-500/30 text-emerald-400 bg-emerald-500/10",
+    "steps": [
+      "1. Cắm dây Console (baud 9600), tắt nguồn thiết bị.",
+      "2. Vừa bật nguồn vừa giữ đè nút \"Mode\" trên mặt switch trong 15s cho đến khi vào màn hình \"switch:\".",
+      "3. Nhập lệnh: switch: flash_init",
+      "4. Đổi tên file cấu hình để bỏ qua mật khẩu: switch: rename flash:config.text flash:config.old",
+      "5. Khởi động lại: switch: boot",
+      "6. Thiết bị sẽ vào trắng cấu hình: gõ \"enable\", sau đó đổi lại tên file: copy flash:config.old flash:config.text rồi copy flash:config.text system:running-config",
+      "7. Đặt lại mật khẩu mới: configure terminal -> enable secret <Pass_Mới> -> write memory."
+    ]
+  },
+  {
+    "vendor": "Cisco CBS (Business 250/350/550)",
+    "icon": "border-sky-500/30 text-sky-400 bg-sky-500/10",
+    "steps": [
+      "1. Cắm dây Console với baudrate 115200 bps (Lưu ý: Không dùng 9600!).",
+      "2. Khởi động lại switch, khi màn hình đếm ngược \"Press Esc to enter Startup Menu\" -> Bấm phím \"Esc\" ngay lập tức.",
+      "3. Menu hiện ra 7 lựa chọn: Chọn số 3 (\"Password Recovery Procedure\").",
+      "4. Switch sẽ tự động khởi động và bỏ qua kiểm tra mật khẩu ở cấp độ console.",
+      "5. Đăng nhập không cần pass, vào configure -> username admin password <Pass_Mới> privilege 15 -> write memory."
+    ]
+  },
+  {
+    "vendor": "Juniper Networks (Junos OS)",
+    "icon": "border-amber-500/30 text-amber-400 bg-amber-500/10",
+    "steps": [
+      "1. Cắm dây Console (baud 9600), reboot thiết bị.",
+      "2. Khi màn hình hiện thông báo loader, bấm phím \"Space\" (phím cách) liên tục để vào dấu nhắc \"loader>\".",
+      "3. Gõ lệnh: loader> boot -s (khởi động vào Single-User Mode).",
+      "4. Khi hệ thống dừng ở prompt sh: gõ lệnh recovery.",
+      "5. Màn hình tự động đưa bạn vào cấu hình CLI: root> configure",
+      "6. Đặt lại mật khẩu root: set system root-authentication plain-text-password -> nhập mật khẩu mới.",
+      "7. Gõ lệnh: commit -> exit -> request system reboot."
+    ]
+  },
+  {
+    "vendor": "Fortinet (FortiGate FortiOS)",
+    "icon": "border-rose-500/30 text-rose-400 bg-rose-500/10",
+    "steps": [
+      "1. Cắm dây Console (baud 9600), rút nguồn và cắm lại nguồn FortiGate.",
+      "2. Chuẩn bị sẵn Serial Number của FortiGate (in trên tem mặt dưới, ví dụ: FGT60ETK18012345).",
+      "3. Ngay khi màn hình boot xong hiện chữ \"login:\", bạn có đúng 14 GIÂY để đăng nhập bằng tài khoản cứu hộ maintainer:",
+      "   - Username: maintainer",
+      "   - Password: bcpb + <Số_Serial_Viết_Hoa> (Ví dụ: bcpbFGT60ETK18012345).",
+      "4. Đăng nhập thành công, đổi ngay mật khẩu admin: config system admin -> edit admin -> set password <Pass_Mới> -> end."
+    ]
+  },
+  {
+    "vendor": "Huawei (VRP OS)",
+    "icon": "border-blue-500/30 text-blue-400 bg-blue-500/10",
+    "steps": [
+      "1. Cắm dây Console (baud 9600), tắt và bật lại nguồn switch Huawei.",
+      "2. Khi màn hình hiện dòng \"Press Ctrl+B to enter BootROM menu...\", nhấn tổ hợp phím \"Ctrl + B\".",
+      "3. Nhập mật khẩu BootROM mặc định: \"Admin@huawei.com\" (hoặc \"admin\", \"huawei\").",
+      "4. Menu BootROM hiện ra: Chọn mục \"Clear password for console user\" (thường là phím số 7 hoặc 8).",
+      "5. Chọn tiếp mục \"Boot with default mode\" để vào switch mà không đòi hỏi mật khẩu.",
+      "6. Đặt lại mật khẩu: local-user admin password cipher <Pass_Mới> -> save."
+    ]
+  },
+  {
+    "vendor": "MikroTik (RouterOS)",
+    "icon": "border-purple-500/30 text-purple-400 bg-purple-500/10",
+    "steps": [
+      "1. Cách 1 (Phần cứng): Rút nguồn, nhấn giữ nút \"Reset\", cắm lại nguồn, giữ khoảng 5s cho đến khi đèn LED nhấp nháy thì buông tay (Thiết bị về mặc định: user admin, không mật khẩu).",
+      "2. Cách 2 (Cài lại Netinstall giữ cấu hình): Nối dây mạng cổng ether1 vào máy tính, chạy phần mềm Netinstall trên Windows.",
+      "3. Nhấn giữ nút Reset đến khi Netinstall nhận thiết bị -> Chọn Keep Configuration nếu muốn giữ lại cấu hình cũ chỉ reset mật khẩu."
+    ]
+  },
+  {
+    "vendor": "Ruijie Networks (RGOS)",
+    "icon": "border-cyan-500/30 text-cyan-400 bg-cyan-500/10",
+    "steps": [
+      "1. Cắm dây Console (baud 9600), tắt và bật lại nguồn.",
+      "2. Khi thấy màn hình đếm ngược Ctrl+C hoặc Ctrl+B -> Bấm tổ hợp phím \"Ctrl + C\" liên tục để vào U-Boot.",
+      "3. Gõ lệnh: rename config.text config.bak",
+      "4. Gõ lệnh: run bootcmd hoặc boot để khởi động vào switch trắng mật khẩu.",
+      "5. Đổi lại tên file cấu hình và nạp lại: copy config.bak config.text -> copy config.text running-config",
+      "6. Đổi mật khẩu: username admin privilege 15 secret <Pass_Mới> -> write memory."
+    ]
+  },
+  {
+    "vendor": "Edgecore Networks (ECS)",
+    "icon": "border-teal-500/30 text-teal-400 bg-teal-500/10",
+    "steps": [
+      "1. Cắm dây Console (baud 115200 bps), khởi động lại thiết bị.",
+      "2. Bấm phím \"Esc\" hoặc \"Ctrl+B\" khi màn hình bootloader hiển thị.",
+      "3. Chọn menu bỏ qua file startup-config (Ignore Startup Configuration).",
+      "4. Sau khi vào hệ thống: copy startup1.cfg running-config -> đặt lại password -> copy running-config startup-config."
+    ]
+  }
+]

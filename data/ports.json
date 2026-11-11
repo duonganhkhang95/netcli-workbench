@@ -1,0 +1,134 @@
+[
+  {
+    "port": "20, 21",
+    "proto": "TCP",
+    "name": "FTP",
+    "desc": "File Transfer Protocol - Truyền tập tin và sao lưu cấu hình"
+  },
+  {
+    "port": "22",
+    "proto": "TCP",
+    "name": "SSH / SFTP",
+    "desc": "Secure Shell - Quản trị dòng lệnh từ xa được mã hóa an toàn"
+  },
+  {
+    "port": "23",
+    "proto": "TCP",
+    "name": "Telnet",
+    "desc": "Giao thức dòng lệnh cũ không mã hóa (chỉ nên dùng nội bộ cô lập)"
+  },
+  {
+    "port": "25",
+    "proto": "TCP",
+    "name": "SMTP",
+    "desc": "Gửi thư điện tử cảnh báo email từ hệ thống mạng"
+  },
+  {
+    "port": "49",
+    "proto": "TCP",
+    "name": "TACACS+",
+    "desc": "Xác thực, phân quyền quản trị thiết bị tập trung (Cisco ISE / ACS)"
+  },
+  {
+    "port": "53",
+    "proto": "UDP/TCP",
+    "name": "DNS",
+    "desc": "Domain Name System - Phân giải tên miền"
+  },
+  {
+    "port": "67, 68",
+    "proto": "UDP",
+    "name": "DHCP / BOOTP",
+    "desc": "Port 67 (Server), Port 68 (Client) - Cấp phát địa chỉ IP tự động"
+  },
+  {
+    "port": "69",
+    "proto": "UDP",
+    "name": "TFTP",
+    "desc": "Trivial FTP - Nâng cấp firmware và sao lưu/khôi phục file cấu hình"
+  },
+  {
+    "port": "80",
+    "proto": "TCP",
+    "name": "HTTP",
+    "desc": "Giao diện web quản lý thiết bị không mã hóa"
+  },
+  {
+    "port": "89",
+    "proto": "IP (Proto 89)",
+    "name": "OSPF",
+    "desc": "Giao thức định tuyến động nội bộ OSPF (Open Shortest Path First)"
+  },
+  {
+    "port": "123",
+    "proto": "UDP",
+    "name": "NTP",
+    "desc": "Network Time Protocol - Đồng bộ thời gian chuẩn cho hệ thống"
+  },
+  {
+    "port": "161, 162",
+    "proto": "UDP",
+    "name": "SNMP",
+    "desc": "Port 161 (Poll), Port 162 (Trap) - Giám sát thiết bị mạng (Zabbix, PRTG)"
+  },
+  {
+    "port": "179",
+    "proto": "TCP",
+    "name": "BGP",
+    "desc": "Border Gateway Protocol - Định tuyến Internet giữa các Autonomous System (AS)"
+  },
+  {
+    "port": "389, 636",
+    "proto": "TCP",
+    "name": "LDAP / LDAPS",
+    "desc": "Xác thực người dùng qua Windows Active Directory"
+  },
+  {
+    "port": "443",
+    "proto": "TCP",
+    "name": "HTTPS",
+    "desc": "Giao diện web quản lý an toàn (SSL/TLS) và SSL-VPN Gateway"
+  },
+  {
+    "port": "500, 4500",
+    "proto": "UDP",
+    "name": "IPsec IKE / NAT-T",
+    "desc": "Port 500 (IKE Phase 1), Port 4500 (NAT-Traversal khi có tường lửa)"
+  },
+  {
+    "port": "514",
+    "proto": "UDP",
+    "name": "Syslog",
+    "desc": "Thu thập nhật ký log sự kiện tập trung về máy chủ SIEM/Syslog Server"
+  },
+  {
+    "port": "1812, 1813",
+    "proto": "UDP",
+    "name": "RADIUS",
+    "desc": "Port 1812 (Authentication), Port 1813 (Accounting) - Xác thực 802.1X/WiFi"
+  },
+  {
+    "port": "3389",
+    "proto": "TCP/UDP",
+    "name": "RDP",
+    "desc": "Remote Desktop Protocol - Quản trị máy chủ Windows từ xa"
+  },
+  {
+    "port": "4789",
+    "proto": "UDP",
+    "name": "VXLAN",
+    "desc": "Virtual eXtensible LAN - Mạng ảo hóa Data Center Spine-Leaf"
+  },
+  {
+    "port": "5060, 5061",
+    "proto": "UDP/TCP",
+    "name": "SIP",
+    "desc": "Giao thức thoại VoIP / IP Phone"
+  },
+  {
+    "port": "8080, 8443",
+    "proto": "TCP",
+    "name": "HTTP/HTTPS Alt",
+    "desc": "Cổng Web dự phòng thường dùng cho NMS, Controller WiFi và Web Proxy"
+  }
+]

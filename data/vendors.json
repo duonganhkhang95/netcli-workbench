@@ -1,0 +1,38 @@
+{
+  "cisco": {
+    "name": "Cisco Catalyst / IOS",
+    "color": "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+  },
+  "ciscocbs": {
+    "name": "Cisco CBS (Business 250/350/550)",
+    "color": "border-sky-500/30 text-sky-400 bg-sky-500/10"
+  },
+  "juniper": {
+    "name": "Juniper Junos",
+    "color": "border-amber-500/30 text-amber-400 bg-amber-500/10"
+  },
+  "fortinet": {
+    "name": "Fortinet FortiOS",
+    "color": "border-rose-500/30 text-rose-400 bg-rose-500/10"
+  },
+  "huawei": {
+    "name": "Huawei VRP",
+    "color": "border-blue-500/30 text-blue-400 bg-blue-500/10"
+  },
+  "mikrotik": {
+    "name": "MikroTik RouterOS",
+    "color": "border-purple-500/30 text-purple-400 bg-purple-500/10"
+  },
+  "aruba": {
+    "name": "Aruba / HP (AOS-CX)",
+    "color": "border-orange-500/30 text-orange-400 bg-orange-500/10"
+  },
+  "ruijie": {
+    "name": "Ruijie Networks (RGOS / Reyee)",
+    "color": "border-cyan-500/30 text-cyan-400 bg-cyan-500/10"
+  },
+  "edgecore": {
+    "name": "Edgecore Networks (ECS)",
+    "color": "border-teal-500/30 text-teal-400 bg-teal-500/10"
+  }
+}

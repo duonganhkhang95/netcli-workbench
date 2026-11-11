@@ -1,0 +1,26 @@
+{
+  "name": "netcli-enterprise-workbench",
+  "version": "2.0.0",
+  "description": "Multi-Vendor Network Engineering Workbench & Command Generator Suite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "network",
+    "cisco",
+    "juniper",
+    "fortinet",
+    "huawei",
+    "mikrotik",
+    "aruba",
+    "ruijie",
+    "edgecore"
+  ],
+  "author": "IT Network Engineer",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

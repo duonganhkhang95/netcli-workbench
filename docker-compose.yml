@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  netcli-workbench:
+    build: .
+    container_name: netcli-node-app
+    restart: always
+    ports:
+      - "8888:8888"
+    environment:
+      - PORT=8888
+      - NODE_ENV=production
