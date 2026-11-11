@@ -126,6 +126,10 @@
             <span class="hidden sm:inline">Thêm Lệnh Mới</span>
             <span class="sm:hidden">+ Thêm</span>
           </button>
+          <button id="nav-btn-admin" class="nav-view-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800/90 hover:bg-slate-700 text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition shadow-sm btn-interactive" data-view="view-admin" title="Trang Quản Trị Hệ Thống">
+            <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <span class="hidden sm:inline">Admin</span>
+          </button>
         </div>
       </div>
     </div>
@@ -139,6 +143,7 @@
       <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-fiber">Quang SFP</button>
       <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-ports">Port Mạng</button>
       <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-recovery">Password Reset</button>
+      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-purple-500/40 text-purple-300 transition shrink-0" data-view="view-admin">Admin 🔒</button>
     </div>
   </header>
 
@@ -520,6 +525,127 @@
           3. Tuyệt Chiêu Mở Khóa Module Quang OEM / Bên Thứ 3 (Third-Party SFP)
         </h3>
         <div id="sfp-unlock-cards" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- VIEW 8: TRANG QUẢN TRỊ ADMIN (SYSTEM DASHBOARD & DATA CRUD) -->
+  <section id="view-admin" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    
+    <!-- Admin Login Card (If not authenticated) -->
+    <div id="admin-login-box" class="max-w-md mx-auto my-12 w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl modal-anim">
+      <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mx-auto mb-4">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+      </div>
+      <h3 class="text-base font-bold text-white text-center">Xác Thực Quản Trị Viên (Admin Portal)</h3>
+      <p class="text-xs text-slate-400 text-center mt-1">Khu vực dành riêng cho kỹ sư quản trị hệ thống NetCLI Workbench</p>
+
+      <div class="mt-5 space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Nhập mã PIN Quản Trị (Mặc định: netadmin2026):</label>
+          <input id="admin-pin-input" type="password" placeholder="••••••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3.5 py-2 text-sm text-center font-mono text-emerald-400 focus:outline-none focus:border-purple-500">
+        </div>
+        <button id="admin-btn-login" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2 rounded-lg text-xs transition shadow-md">
+          Mở Khóa Quản Trị
+        </button>
+      </div>
+    </div>
+
+    <!-- Admin Dashboard (Visible after login) -->
+    <div id="admin-panel" class="hidden space-y-6">
+      
+      <!-- Top Header & Logout -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              Bảng Điều Khiển Quản Trị Hệ Thống (System Admin Console)
+              <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Super Admin</span>
+            </h2>
+            <p class="text-xs text-slate-400">Quản lý kho lệnh, thêm hãng thiết bị mới trực tiếp trên web và sao lưu hệ thống</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a id="admin-btn-backup-download" href="/api/admin/backup-all" target="_blank" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>Tải Golden Backup JSON</span>
+          </a>
+          <button id="admin-btn-logout" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition">
+            Đăng Xuất
+          </button>
+        </div>
+      </div>
+
+      <!-- Server Health & KPI Cards -->
+      <div id="admin-stats-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Admin Functional Tabs -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <div class="flex items-center gap-2 border-b border-slate-800 px-4 pt-3 text-xs font-semibold">
+          <button class="admin-tab px-3.5 py-2 border-b-2 border-purple-500 text-purple-400 bg-slate-950/60 rounded-t-lg" data-admintab="tasks">Quản Lý Bài Cấu Hình (tasks.json)</button>
+          <button class="admin-tab px-3.5 py-2 border-b-2 border-transparent text-slate-400 hover:text-white" data-admintab="vendors">Thêm Hãng Mới (vendors.json)</button>
+        </div>
+
+        <!-- Subtab 1: Manage Tasks -->
+        <div id="admintab-view-tasks" class="p-5 space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-800/80">
+            <div>
+              <h3 class="text-sm font-bold text-white">Danh Sách Toàn Bộ Bài Cấu Hình Trong Kho</h3>
+              <p class="text-xs text-slate-400">Bạn có thể tạo thêm bài cấu hình mới hoặc xóa bớt trực tiếp từ giao diện web</p>
+            </div>
+            <button id="btn-admin-open-add-task" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-1.5 shadow-sm transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              <span>+ Thêm Bài Cấu Hình Mới</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto rounded-lg border border-slate-800">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-950 text-slate-300 border-b border-slate-800 font-semibold">
+                  <th class="p-3">ID Tác Vụ</th>
+                  <th class="p-3">Tiêu Đề Bài Cấu Hình</th>
+                  <th class="p-3">Danh Mục</th>
+                  <th class="p-3">Số Hãng Hỗ Trợ</th>
+                  <th class="p-3 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="admin-tasks-tbody" class="divide-y divide-slate-800/80 font-mono text-xs"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Subtab 2: Manage Vendors -->
+        <div id="admintab-view-vendors" class="p-5 space-y-4 hidden">
+          <div class="pb-3 border-b border-slate-800/80">
+            <h3 class="text-sm font-bold text-white">Thêm Thương Hiệu Mạng Mới Vào Hệ Thống</h3>
+            <p class="text-xs text-slate-400">Sau khi thêm, hãng mới sẽ xuất hiện trên bộ lọc Dropdown của toàn bộ website</p>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 max-w-xl space-y-3 text-xs">
+            <div>
+              <label class="block text-slate-300 font-medium mb-1">Mã Key định danh (viết liền không dấu, vd: dell, vyos, allied):</label>
+              <input id="admin-vendor-key" type="text" placeholder="vd: dell" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-emerald-400 focus:outline-none focus:border-purple-500">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-medium mb-1">Tên hiển thị đầy đủ của hãng (vd: Dell Networking OS10):</label>
+              <input id="admin-vendor-name" type="text" placeholder="vd: Dell Networking (OS10)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-purple-500">
+            </div>
+            <div>
+              <button id="admin-btn-save-vendor" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold transition">
+                Lưu Thương Hiệu Mới
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>

@@ -104,4 +104,121 @@ router.get('/fiber-optics', (req, res) => {
   res.json(loadData('fiber_optics.json'));
 });
 
+
+// ==========================================
+// ADMIN PORTAL APIS
+// ==========================================
+
+// Verify Admin PIN (Default: netadmin2026)
+const ADMIN_PIN = process.env.ADMIN_PIN || 'netadmin2026';
+
+router.post('/admin/auth', (req, res) => {
+  const { pin } = req.body;
+  if (pin === ADMIN_PIN) {
+    res.json({ success: true, token: 'session_' + Date.now() });
+  } else {
+    res.status(401).json({ success: false, error: 'Mã PIN Admin không chính xác!' });
+  }
+});
+
+// Admin System Stats
+router.get('/admin/stats', (req, res) => {
+  const mem = process.memoryUsage();
+  const tasks = loadData('tasks.json');
+  const showCmds = loadData('show_commands.json');
+  const ports = loadData('ports.json');
+  const vendors = loadData('vendors.json');
+
+  res.json({
+    status: 'healthy',
+    uptime: Math.floor(process.uptime()),
+    nodeVersion: process.version,
+    platform: process.platform,
+    ramUsedMB: (mem.rss / 1024 / 1024).toFixed(1),
+    ramHeapMB: (mem.heapUsed / 1024 / 1024).toFixed(1),
+    totalTasks: tasks.length,
+    totalShowCmds: showCmds.length,
+    totalPorts: ports.length,
+    totalVendors: Object.keys(vendors).length
+  });
+});
+
+// Admin: Add or Update a Task (Persists directly into data/tasks.json)
+router.post('/admin/tasks', (req, res) => {
+  const newTask = req.body;
+  if (!newTask.id || !newTask.title || !newTask.category) {
+    return res.status(400).json({ error: 'Thiếu thông tin ID, Tiêu đề hoặc Danh mục' });
+  }
+
+  const tasksFile = path.join(dataDir, 'tasks.json');
+  let tasks = loadData('tasks.json');
+
+  const existingIdx = tasks.findIndex(t => t.id === newTask.id);
+  if (existingIdx >= 0) {
+    tasks[existingIdx] = newTask;
+  } else {
+    tasks.unshift(newTask);
+  }
+
+  try {
+    fs.writeFileSync(tasksFile, JSON.stringify(tasks, null, 2), 'utf8');
+    res.json({ success: true, message: 'Đã lưu bài cấu hình vào hệ thống!', task: newTask });
+  } catch (err) {
+    res.status(500).json({ error: 'Lỗi ghi file tasks.json: ' + err.message });
+  }
+});
+
+// Admin: Delete a Task
+router.delete('/admin/tasks/:id', (req, res) => {
+  const taskId = req.params.id;
+  const tasksFile = path.join(dataDir, 'tasks.json');
+  let tasks = loadData('tasks.json');
+
+  tasks = tasks.filter(t => t.id !== taskId);
+  try {
+    fs.writeFileSync(tasksFile, JSON.stringify(tasks, null, 2), 'utf8');
+    res.json({ success: true, message: 'Đã xóa bài cấu hình!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Lỗi ghi file tasks.json' });
+  }
+});
+
+// Admin: Add a new Brand / Vendor (Persists directly into data/vendors.json)
+router.post('/admin/vendors', (req, res) => {
+  const { key, name, color } = req.body;
+  if (!key || !name) return res.status(400).json({ error: 'Thiếu key hoặc tên hãng' });
+
+  const vendorsFile = path.join(dataDir, 'vendors.json');
+  let vendors = loadData('vendors.json');
+
+  vendors[key.toLowerCase()] = {
+    name,
+    color: color || 'border-slate-500/30 text-slate-300 bg-slate-800/40'
+  };
+
+  try {
+    fs.writeFileSync(vendorsFile, JSON.stringify(vendors, null, 2), 'utf8');
+    res.json({ success: true, message: 'Đã thêm thương hiệu mới!', vendors });
+  } catch (err) {
+    res.status(500).json({ error: 'Lỗi ghi file vendors.json' });
+  }
+});
+
+// Admin: Backup All Database
+router.get('/admin/backup-all', (req, res) => {
+  const bundle = {
+    timestamp: new Date().toISOString(),
+    vendors: loadData('vendors.json'),
+    tasks: loadData('tasks.json'),
+    show_commands: loadData('show_commands.json'),
+    ports: loadData('ports.json'),
+    recovery: loadData('recovery.json'),
+    console_serial: loadData('console_serial.json'),
+    fiber_optics: loadData('fiber_optics.json')
+  };
+  res.setHeader('Content-Disposition', 'attachment; filename=netcli_golden_backup_' + Date.now() + '.json');
+  res.setHeader('Content-Type', 'application/json');
+  res.send(JSON.stringify(bundle, null, 2));
+});
+
 module.exports = router;

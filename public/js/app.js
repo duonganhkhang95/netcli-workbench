@@ -955,6 +955,80 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadAnchor.remove();
     showToast('Đã tải xuống file backup JSON!');
   });
+
+
+  // Admin Login Handler
+  document.getElementById('admin-btn-login')?.addEventListener('click', loginAdmin);
+  document.getElementById('admin-pin-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loginAdmin();
+  });
+
+  document.getElementById('admin-btn-logout')?.addEventListener('click', () => {
+    sessionStorage.removeItem('netcli_admin_token');
+    isAdminAuthenticated = false;
+    showToast('Đã đăng xuất khỏi Admin Portal');
+    document.getElementById('admin-login-box')?.classList.remove('hidden');
+    document.getElementById('admin-panel')?.classList.add('hidden');
+  });
+
+  // Admin Subtabs (tasks / vendors)
+  document.querySelectorAll('.admin-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab').forEach(t => {
+        t.classList.remove('border-purple-500', 'text-purple-400', 'bg-slate-950/60');
+        t.classList.add('border-transparent', 'text-slate-400');
+      });
+      tab.classList.remove('border-transparent', 'text-slate-400');
+      tab.classList.add('border-purple-500', 'text-purple-400', 'bg-slate-950/60');
+
+      const target = tab.getAttribute('data-admintab');
+      if (target === 'tasks') {
+        document.getElementById('admintab-view-tasks')?.classList.remove('hidden');
+        document.getElementById('admintab-view-vendors')?.classList.add('hidden');
+      } else {
+        document.getElementById('admintab-view-tasks')?.classList.add('hidden');
+        document.getElementById('admintab-view-vendors')?.classList.remove('hidden');
+      }
+    });
+  });
+
+  // Admin Add Vendor
+  document.getElementById('admin-btn-save-vendor')?.addEventListener('click', async () => {
+    const key = document.getElementById('admin-vendor-key')?.value.trim();
+    const name = document.getElementById('admin-vendor-name')?.value.trim();
+    if (!key || !name) {
+      showToast('Vui lòng nhập đủ Key và Tên hãng!');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/vendors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, name })
+      });
+      const data = await res.json();
+      showToast(data.message || 'Đã thêm hãng mới!');
+      document.getElementById('admin-vendor-key').value = '';
+      document.getElementById('admin-vendor-name').value = '';
+      // Update local state
+      VENDORS_INFO[key.toLowerCase()] = { name, color: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10' };
+      renderCards();
+    } catch (e) {
+      showToast('Lỗi gửi API!');
+    }
+  });
+
+  // Open modal custom when clicking add task in admin
+  document.getElementById('btn-admin-open-add-task')?.addEventListener('click', () => {
+    document.getElementById('btn-custom-add')?.click();
+  });
+
+  // Check auth state if navigating to admin view
+  document.querySelector('[data-view="view-admin"]')?.addEventListener('click', () => {
+    checkAdminAuth();
+  });
+
 });
 
 
@@ -1024,4 +1098,168 @@ function renderFiberOptics() {
       btn.addEventListener('click', () => copyText(btn.getAttribute('data-copy'), btn));
     });
   }
+}
+
+
+// ==========================================
+// ADMIN PORTAL CLIENT LOGIC
+// ==========================================
+let isAdminAuthenticated = false;
+
+function checkAdminAuth() {
+  const token = sessionStorage.getItem('netcli_admin_token');
+  if (token) {
+    isAdminAuthenticated = true;
+    showAdminDashboard();
+  } else {
+    document.getElementById('admin-login-box')?.classList.remove('hidden');
+    document.getElementById('admin-panel')?.classList.add('hidden');
+  }
+}
+
+async function loginAdmin() {
+  const pin = document.getElementById('admin-pin-input')?.value.trim();
+  if (!pin) {
+    showToast('Vui lòng nhập mã PIN!');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    const data = await res.json();
+    if (data.success) {
+      sessionStorage.setItem('netcli_admin_token', data.token);
+      isAdminAuthenticated = true;
+      showToast('Đăng nhập Quản Trị thành công!');
+      showAdminDashboard();
+    } else {
+      showToast(data.error || 'Mã PIN sai!');
+    }
+  } catch (err) {
+    // If running in client-only demo mode (without backend API):
+    if (pin === 'netadmin2026' || pin === 'admin123') {
+      sessionStorage.setItem('netcli_admin_token', 'demo_token');
+      isAdminAuthenticated = true;
+      showToast('Đăng nhập thành công!');
+      showAdminDashboard();
+    } else {
+      showToast('Lỗi kết nối máy chủ!');
+    }
+  }
+}
+
+function showAdminDashboard() {
+  document.getElementById('admin-login-box')?.classList.add('hidden');
+  document.getElementById('admin-panel')?.classList.remove('hidden');
+  loadAdminStats();
+  renderAdminTasks();
+}
+
+async function loadAdminStats() {
+  const grid = document.getElementById('admin-stats-grid');
+  if (!grid) return;
+
+  try {
+    const res = await fetch('/api/admin/stats');
+    const data = await res.json();
+
+    const hours = Math.floor(data.uptime / 3600);
+    const mins = Math.floor((data.uptime % 3600) / 60);
+
+    grid.innerHTML = `
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 card-smooth-fx">
+        <div class="text-[11px] text-slate-400 font-medium">Trạng Thái Dịch Vụ</div>
+        <div class="text-sm font-bold text-emerald-400 flex items-center gap-1.5 mt-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>Online / Active</span>
+        </div>
+        <div class="text-[10px] text-slate-500 mt-1">Node ${data.nodeVersion}</div>
+      </div>
+
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 card-smooth-fx">
+        <div class="text-[11px] text-slate-400 font-medium">RAM Chiếm Dụng</div>
+        <div class="text-base font-bold text-cyan-400 mt-1">${data.ramUsedMB} MB</div>
+        <div class="text-[10px] text-slate-500 mt-1">Heap: ${data.ramHeapMB} MB</div>
+      </div>
+
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 card-smooth-fx">
+        <div class="text-[11px] text-slate-400 font-medium">Thời Gian Uptime</div>
+        <div class="text-base font-bold text-purple-400 mt-1">${hours}h ${mins}m</div>
+        <div class="text-[10px] text-slate-500 mt-1">PM2 Service</div>
+      </div>
+
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 card-smooth-fx">
+        <div class="text-[11px] text-slate-400 font-medium">Tổng Bài Cấu Hình</div>
+        <div class="text-base font-bold text-white mt-1">${data.totalTasks}</div>
+        <div class="text-[10px] text-slate-500 mt-1">L2, L3, OSPF, BGP, NAT</div>
+      </div>
+
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 card-smooth-fx">
+        <div class="text-[11px] text-slate-400 font-medium">Bách Khoa Lệnh Show</div>
+        <div class="text-base font-bold text-amber-400 mt-1">${data.totalShowCmds}</div>
+        <div class="text-[10px] text-slate-500 mt-1">Tra cứu chẩn đoán</div>
+      </div>
+
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 card-smooth-fx">
+        <div class="text-[11px] text-slate-400 font-medium">Số Hãng Hỗ Trợ</div>
+        <div class="text-base font-bold text-emerald-400 mt-1">${data.totalVendors} Hãng</div>
+        <div class="text-[10px] text-slate-500 mt-1">Cisco, Juniper, Forti...</div>
+      </div>
+    `;
+  } catch (err) {
+    grid.innerHTML = `
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 col-span-full text-xs text-slate-400">
+        Đang chạy ở chế độ Client Preview (hoặc backend API đang nạp).
+      </div>
+    `;
+  }
+}
+
+function renderAdminTasks() {
+  const tbody = document.getElementById('admin-tasks-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  CORE_TASKS.forEach(t => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-800/40 transition';
+    tr.innerHTML = `
+      <td class="p-3 text-cyan-400 font-bold select-all">${escapeHtml(t.id)}</td>
+      <td class="p-3 text-white font-medium">${escapeHtml(t.title)}</td>
+      <td class="p-3 text-slate-300 uppercase">${escapeHtml(t.category)}</td>
+      <td class="p-3 text-emerald-400 font-bold">${Object.keys(t.vendors || {}).length} Hãng</td>
+      <td class="p-3 text-right">
+        <button class="btn-admin-del-task px-2.5 py-1 text-[11px] font-medium rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition" data-id="${escapeAttr(t.id)}">
+          Xóa
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll('.btn-admin-del-task').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      if (confirm(`Bạn có chắc chắn muốn xóa bài cấu hình "${id}" khỏi hệ thống không?`)) {
+        try {
+          const res = await fetch(`/api/admin/tasks/${id}`, { method: 'DELETE' });
+          const resData = await res.json();
+          showToast(resData.message || 'Đã xóa!');
+          // Refresh tasks
+          CORE_TASKS = CORE_TASKS.filter(t => t.id !== id);
+          renderAdminTasks();
+          renderCards();
+        } catch (e) {
+          CORE_TASKS = CORE_TASKS.filter(t => t.id !== id);
+          renderAdminTasks();
+          renderCards();
+          showToast('Đã xóa khỏi bộ nhớ!');
+        }
+      }
+    });
+  });
 }
