@@ -589,37 +589,69 @@ router.get('/system/version', (req, res) => {
   });
 });
 
+function compareSemver(a, b) {
+  const pa = String(a).replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+  const pb = String(b).replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+    if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+  }
+  return 0;
+}
+
+function detectGithubRepo() {
+  if (process.env.GITHUB_REPO) return process.env.GITHUB_REPO.trim();
+  try {
+    const { execSync } = require('child_process');
+    const remoteUrl = execSync('git config --get remote.origin.url', { cwd: path.join(__dirname, '..'), timeout: 1500 }).toString().trim();
+    const match = remoteUrl.match(/github\.com[:/]([^/]+\/[^/.]+?)(?:\.git)?$/i);
+    if (match) return match[1];
+  } catch (e) {}
+  return '';
+}
+
 router.get('/system/check-update', async (req, res) => {
-  const githubRepo = process.env.GITHUB_REPO || ''; // e.g. "khangit/netcli-workbench"
+  const pkgPath = path.join(__dirname, '..', 'package.json');
+  let localVersion = APP_VERSION;
+  try {
+    localVersion = JSON.parse(fs.readFileSync(pkgPath, 'utf8')).version || APP_VERSION;
+  } catch (e) {}
+
+  const githubRepo = detectGithubRepo();
   const result = {
-    currentVersion: APP_VERSION,
-    latestVersion: APP_VERSION,
+    currentVersion: localVersion,
+    latestVersion: localVersion,
     hasUpdate: false,
+    githubRepo: githubRepo || null,
     buildDate: APP_BUILD_DATE,
     checkedAt: new Date().toISOString(),
     updateCommand: 'cd /var/www/netcli && git pull && pm2 restart netcli',
     changelog: [
-      'v2.6.0: Bản quyền KhangIT, Đa ngôn ngữ (VI / EN / ZH), Trang Giới Thiệu & Check for Update.',
-      'v2.5.0: Rà soát chuẩn CLI 10 hãng từ tài liệu chính thức + Bổ sung DrayTek VigorOS.',
-      'v2.4.0: Trạm chẩn đoán sự cố AI (SSH/Telnet) + Nút Optimizer + Lệnh One-Shot đa hãng.'
+      'v2.6.0: TraceDeck Raycast UI, Dynamic Island Navbar, Dark/Light Mode (Sun/Moon) & Bản quyền KhangIT.',
+      'v2.5.0: Rà soát chuẩn CLI 10 hãng từ tài liệu chính thức + Bổ sung DrayTek VigorOS.'
     ]
   };
 
   if (githubRepo && typeof fetch === 'function') {
-    try {
-      const resp = await fetch(`https://raw.githubusercontent.com/${githubRepo}/main/package.json`);
-      if (resp.ok) {
-        const remotePkg = await resp.json();
-        if (remotePkg.version && remotePkg.version !== APP_VERSION) {
-          result.latestVersion = remotePkg.version;
-          result.hasUpdate = true;
+    for (const branch of ['main', 'master']) {
+      try {
+        const resp = await fetch(`https://raw.githubusercontent.com/${githubRepo}/${branch}/package.json?t=${Date.now()}`);
+        if (resp.ok) {
+          const remotePkg = await resp.json();
+          if (remotePkg.version) {
+            result.latestVersion = remotePkg.version;
+            result.hasUpdate = compareSemver(remotePkg.version, localVersion) > 0;
+            result.branch = branch;
+          }
+          break;
         }
+      } catch (e) {
+        result.note = 'Không thể kết nối GitHub để kiểm tra phiên bản từ xa.';
       }
-    } catch (e) {
-      result.note = 'Đang kiểm tra ở chế độ offline/nội bộ.';
     }
+  } else if (!githubRepo) {
+    result.note = 'Chưa phát hiện GitHub remote. Hãy clone từ GitHub hoặc đặt biến môi trường GITHUB_REPO=user/repo.';
   }
   res.json(result);
 });
-
 module.exports = router;
