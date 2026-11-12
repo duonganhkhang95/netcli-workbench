@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NetCLI Enterprise Workbench - Trạm Làm Việc Kỹ Sư Mạng Đa Hãng</title>
+  <title>TraceDeck — Network CLI & Diagnostics</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,133 +31,161 @@
     <span id="toast-msg">Đã sao chép lệnh thành công!</span>
   </div>
 
-    <!-- Native Header Navigation (Sleek & Perfectly Balanced) -->
-  <header class="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/70 shadow-lg shadow-black/20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="h-16 flex items-center justify-between gap-4">
+      <!-- Dynamic Island Floating Header Navigation -->
+  <header class="sticky top-0 z-40 pt-3 pb-2 px-3 sm:px-6 pointer-events-none">
+    <div class="max-w-7xl mx-auto flex flex-col items-center gap-2">
+      
+      <!-- Apple Dynamic Island Floating Pill -->
+      <div class="pointer-events-auto w-full lg:w-auto bg-black/90 backdrop-blur-2xl rounded-full px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 sm:gap-3 dynamic-island-shell">
         
-        <!-- Left: Logo & Brand -->
-        <div class="flex items-center gap-2.5 shrink-0">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center text-white shadow-md font-mono font-bold text-base logo-pulse-glow transition-transform hover:scale-105 cursor-pointer" onclick="document.getElementById('nav-btn-generator').click()">
+        <!-- Left: Live Status Dot + Brand -->
+        <div class="flex items-center gap-2 shrink-0 pl-1">
+          <div class="relative flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-tr from-rose-500 via-red-500 to-amber-500 text-white font-mono font-bold text-xs shadow-md cursor-pointer island-pill-btn" onclick="document.getElementById('nav-btn-generator').click()" title="TraceDeck v2.6">
             &gt;_
+            <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-black animate-pulse"></span>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm sm:text-base font-bold text-white tracking-tight cursor-pointer hover:text-emerald-400 transition" onclick="document.getElementById('nav-btn-generator').click()">NetCLI Workbench</span>
-            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60 hidden sm:inline-block">v2.5</span>
+          <div class="hidden sm:flex items-center gap-1.5">
+            <span class="text-xs sm:text-sm font-bold text-white tracking-tight cursor-pointer hover:text-emerald-400 transition" onclick="document.getElementById('nav-btn-generator').click()">TraceDeck</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-emerald-300">v2.6</span>
           </div>
         </div>
 
-        <!-- Center: Segmented Controller Navigation (Clean, Unified, No Visual Clutter) -->
-        <nav class="hidden lg:flex items-center gap-0.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-medium">
-          <button id="nav-btn-generator" class="nav-view-btn px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold transition flex items-center gap-1.5 shadow-sm" data-view="view-generator">
+        <!-- Center: Elastic Dynamic Island Pills (Desktop) -->
+        <nav class="hidden lg:flex items-center gap-1 text-xs font-medium">
+          <button id="nav-btn-generator" class="nav-view-btn island-pill-btn island-active px-3 py-1.5 rounded-full flex items-center gap-1.5" data-view="view-generator">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            <span>Cấu Hình</span>
+            <span data-i18n="nav_config">Cấu Hình</span>
           </button>
           
-          <button id="nav-btn-builder" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition flex items-center gap-1.5" data-view="view-builder">
+          <button id="nav-btn-builder" class="nav-view-btn island-pill-btn px-3 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-1.5" data-view="view-builder">
             <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            <span>Sinh Lệnh</span>
+            <span data-i18n="nav_builder">Sinh Lệnh</span>
           </button>
 
-          <button id="nav-btn-diagnose" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition flex items-center gap-1.5" data-view="view-diagnose">
+          <button id="nav-btn-diagnose" class="nav-view-btn island-pill-btn px-3 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-1.5" data-view="view-diagnose">
             <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <span>Chẩn Đoán</span>
+            <span data-i18n="nav_diagnose">Chẩn Đoán</span>
           </button>
 
-          <button id="nav-btn-mikrotik" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition flex items-center gap-1.5" data-view="view-mikrotik">
+          <button id="nav-btn-mikrotik" class="nav-view-btn island-pill-btn px-3 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-1.5" data-view="view-mikrotik">
             <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
             <span>RouterOS</span>
           </button>
           
-          <button id="nav-btn-showcmds" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition flex items-center gap-1.5" data-view="view-showcmds">
+          <button id="nav-btn-showcmds" class="nav-view-btn island-pill-btn px-3 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-1.5" data-view="view-showcmds">
             <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-            <span>Lệnh Show</span>
+            <span data-i18n="nav_show">Lệnh Show</span>
           </button>
           
-          <button id="nav-btn-subnet" class="nav-view-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition flex items-center gap-1.5" data-view="view-subnet">
+          <button id="nav-btn-subnet" class="nav-view-btn island-pill-btn px-3 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-1.5" data-view="view-subnet">
             <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
             <span>Subnet</span>
           </button>
 
           <!-- Dropdown: Tiện Ích Sổ Tay -->
           <div class="relative" id="dropdown-tools-wrapper">
-            <button id="btn-dropdown-tools" type="button" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition flex items-center gap-1.5">
+            <button id="btn-dropdown-tools" type="button" class="island-pill-btn px-3 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-1.5">
               <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-              <span id="label-active-tool">Tiện Ích</span>
-              <svg class="w-3 h-3 text-slate-500 transition-transform duration-200" id="icon-dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              <span id="label-active-tool" data-i18n="nav_tools">Tiện Ích</span>
+              <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" id="icon-dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
 
             <!-- Dropdown Menu items -->
-            <div id="dropdown-tools-menu" class="hidden absolute top-full left-0 mt-2 w-64 bg-slate-900/95 backdrop-blur-xl border border-slate-700/70 rounded-xl shadow-2xl p-1.5 z-50 modal-anim">
-              <button id="nav-btn-console" class="nav-view-btn w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-console">
-                <span class="w-6 h-6 rounded-md bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">🔌</span>
+            <div id="dropdown-tools-menu" class="hidden absolute top-full left-0 mt-3 w-64 bg-slate-950/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-1.5 z-50 modal-anim">
+              <button id="nav-btn-console" class="nav-view-btn w-full text-left px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-console">
+                <span class="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">🔌</span>
                 <div>
-                  <div class="font-semibold text-white">Thông Số Console &amp; Cáp</div>
+                  <div class="font-semibold text-white" data-i18n="dd_console">Thông Số Console &amp; Cáp</div>
                   <div class="text-[10px] text-slate-400">Baudrate 9600/115200, chân cáp, user</div>
                 </div>
               </button>
 
-              <button id="nav-btn-fiber" class="nav-view-btn w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-fiber">
-                <span class="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">💡</span>
+              <button id="nav-btn-fiber" class="nav-view-btn w-full text-left px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-fiber">
+                <span class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">💡</span>
                 <div>
-                  <div class="font-semibold text-white">Cáp Quang &amp; SFP Unlock</div>
+                  <div class="font-semibold text-white" data-i18n="dd_fiber">Cáp Quang &amp; SFP Unlock</div>
                   <div class="text-[10px] text-slate-400">Ngưỡng dBm, mở khóa SFP ngoài</div>
                 </div>
               </button>
 
-              <button id="nav-btn-ports" class="nav-view-btn w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-ports">
-                <span class="w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">📋</span>
+              <button id="nav-btn-ports" class="nav-view-btn w-full text-left px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-ports">
+                <span class="w-6 h-6 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center shrink-0">📋</span>
                 <div>
-                  <div class="font-semibold text-white">Tra Cứu Port &amp; Protocol</div>
+                  <div class="font-semibold text-white" data-i18n="dd_ports">Tra Cứu Port &amp; Protocol</div>
                   <div class="text-[10px] text-slate-400">Port TCP/UDP cho ACL &amp; Firewall</div>
                 </div>
               </button>
 
-              <button id="nav-btn-recovery" class="nav-view-btn w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-recovery">
-                <span class="w-6 h-6 rounded-md bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">🔑</span>
+              <button id="nav-btn-recovery" class="nav-view-btn w-full text-left px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-recovery">
+                <span class="w-6 h-6 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">🔑</span>
                 <div>
-                  <div class="font-semibold text-white">Password Recovery</div>
-                  <div class="text-[10px] text-slate-400">Sổ tay phá pass console 8 hãng</div>
+                  <div class="font-semibold text-white" data-i18n="dd_recovery">Password Recovery</div>
+                  <div class="text-[10px] text-slate-400">Sổ tay khôi phục mật khẩu console 9 hãng</div>
+                </div>
+              </button>
+
+              <div class="my-1 border-t border-white/10"></div>
+              <button id="nav-btn-about" class="nav-view-btn w-full text-left px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-2.5 text-xs font-medium" data-view="view-about">
+                <span class="w-6 h-6 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0">👤</span>
+                <div>
+                  <div class="font-semibold text-white" data-i18n="nav_about">Giới Thiệu &amp; Cập Nhật</div>
+                  <div class="text-[10px] text-slate-400">Bản quyền KhangIT &amp; Check Update</div>
                 </div>
               </button>
             </div>
           </div>
         </nav>
 
-        <!-- Right: Action Buttons (Minimal & Crisp) -->
-        <div class="flex items-center gap-2 shrink-0">
-          <button id="btn-rosetta" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center gap-1.5 transition btn-interactive" title="Bảng đối chiếu cú pháp đa hãng">
-            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-            <span class="hidden md:inline">Đối Chiếu</span>
+        <!-- Right: Language & Action Pills -->
+        <div class="flex items-center gap-1.5 shrink-0 pr-0.5">
+                    <!-- Raycast Command Palette Trigger (⌘K) -->
+          <button id="btn-raycast-cmdk" type="button" class="island-pill-btn hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 text-xs transition" title="Mở Raycast Command Palette (Ctrl+K / ⌘K)">
+            <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <span class="raycast-kbd">⌘K</span>
           </button>
 
-          <button id="btn-custom-add" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5 transition btn-interactive">
+                    <!-- Dark / Light Theme Toggle (Sun / Moon) -->
+          <button id="btn-theme-toggle" type="button" class="island-pill-btn w-7 h-7 rounded-full bg-white/10 hover:bg-white/15 text-amber-300 border border-white/10 flex items-center justify-center transition" title="Chuyển giao diện Sáng / Tối (Dark / Light Mode)">
+            <!-- Sun Icon (shown in Dark mode to switch to Light) -->
+            <svg id="icon-theme-sun" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            <!-- Moon Icon (shown in Light mode to switch to Dark) -->
+            <svg id="icon-theme-moon" class="w-4 h-4 text-indigo-600 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+          </button>
+
+          <button id="btn-rosetta" class="island-pill-btn px-2.5 py-1 text-xs font-medium rounded-full bg-white/10 hover:bg-white/15 text-slate-200 flex items-center gap-1 transition" title="Bảng đối chiếu cú pháp đa hãng">
+            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <span class="hidden xl:inline" data-i18n="btn_rosetta">Đối Chiếu</span>
+          </button>
+
+          <button id="btn-custom-add" class="island-pill-btn px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1 transition">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            <span class="hidden sm:inline">Thêm Lệnh</span>
+            <span class="hidden md:inline" data-i18n="btn_add">Thêm Lệnh</span>
           </button>
 
-          <button id="nav-btn-admin" class="nav-view-btn px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-purple-300 border border-slate-800 flex items-center gap-1.5 transition btn-interactive" data-view="view-admin" title="Trang Quản Trị Hệ Thống">
+          <button id="nav-btn-admin" class="nav-view-btn island-pill-btn px-2.5 py-1 text-xs font-medium rounded-full bg-white/10 hover:bg-white/15 text-slate-300 hover:text-purple-300 flex items-center gap-1 transition" data-view="view-admin" title="Trang Quản Trị Hệ Thống">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-            <span class="hidden lg:inline">Admin</span>
+            <span class="hidden xl:inline">Admin</span>
           </button>
         </div>
 
       </div>
-    </div>
 
-    <!-- Mobile Nav Bar: Smooth Touch-scrollable Pill Strip (Clean & Native) -->
-    <div class="lg:hidden bg-slate-950/95 border-t border-slate-800/80 px-3 py-2 overflow-x-auto scrollbar-none flex items-center gap-2 text-xs font-medium whitespace-nowrap">
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-emerald-600 text-white font-bold transition shrink-0" data-view="view-generator">Cấu Hình</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-builder">Sinh Lệnh</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-diagnose">Chẩn Đoán</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-mikrotik">RouterOS</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-showcmds">Lệnh Show</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-subnet">Subnet</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-console">Console</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-fiber">Quang SFP</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-ports">Port Mạng</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-recovery">Password</button>
-      <button class="nav-view-btn px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 transition shrink-0" data-view="view-admin">Admin 🔒</button>
+      <!-- Mobile Dynamic Island Pill Strip -->
+      <div class="pointer-events-auto lg:hidden w-full bg-black/85 backdrop-blur-xl border border-white/10 rounded-full px-3 py-1.5 overflow-x-auto scrollbar-none flex items-center gap-1.5 text-xs font-medium whitespace-nowrap shadow-xl">
+        <button class="nav-view-btn island-pill-btn island-active px-3 py-1 rounded-full font-bold shrink-0" data-view="view-generator" data-i18n="nav_config">Cấu Hình</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-builder" data-i18n="nav_builder">Sinh Lệnh</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-diagnose" data-i18n="nav_diagnose">Chẩn Đoán</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-mikrotik">RouterOS</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-showcmds" data-i18n="nav_show">Lệnh Show</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-subnet">Subnet</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-console">Console</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-fiber">SFP</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-ports">Ports</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-recovery">Recovery</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-about" data-i18n="nav_about">Tác Giả</button>
+        <button class="nav-view-btn island-pill-btn px-3 py-1 rounded-full bg-white/5 text-slate-300 shrink-0" data-view="view-admin">Admin</button>
+      </div>
+
     </div>
   </header>
 
@@ -196,6 +224,7 @@
           <option value="aruba">Aruba / HP (AOS-CX)</option>
           <option value="ruijie">Ruijie Networks (RGOS / Reyee)</option>
           <option value="edgecore">Edgecore Networks (ECS)</option>
+          <option value="draytek">DrayTek VigorOS (Vigor2927/2962/3910)</option>
         </select>
       </div>
     </div>
@@ -436,10 +465,10 @@
         </div>
         <div>
           <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            Bảng Thông Số Kết Nối Console Serial &amp; Cáp Cứu Hộ Đa Hãng
+            <span data-i18n="console_title">Bảng Thông Số Kết Nối Console Serial &amp; Cáp Cứu Hộ Đa Hãng</span>
             <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Cực Kỳ Quan Trọng</span>
           </h2>
-          <p class="text-xs text-slate-400">Tra cứu nhanh tốc độ Baudrate, thông số 8-N-1, chuẩn chân cắm cáp và tài khoản mặc định của 9 hãng</p>
+          <p class="text-xs text-slate-400">Tra cứu nhanh tốc độ Baudrate, thông số 8-N-1, chuẩn chân cắm cáp và tài khoản mặc định của 10 hãng</p>
         </div>
       </div>
 
@@ -472,8 +501,8 @@
         </div>
         <div>
           <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            Cẩm Nang Cáp Quang &amp; Bí Kíp Mở Khóa Module SFP Hãng Thứ 3
-            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Kinh Nghiệm 30 Năm</span>
+            <span data-i18n="fiber_title">Cẩm Nang Cáp Quang &amp; Hướng Dẫn Mở Khóa Module SFP Bên Thứ 3</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Kinh Nghiệm Thực Chiến</span>
           </h2>
           <p class="text-xs text-slate-400">Phân biệt chuẩn Single-mode vs Multi-mode, ngưỡng dBm an toàn và lệnh mở khóa module quang OEM không chính hãng</p>
         </div>
@@ -522,7 +551,7 @@
           <div class="bg-slate-950 border border-rose-500/30 rounded-xl p-3.5">
             <div class="text-[11px] text-rose-400 font-bold uppercase">Mức Cực Kỳ Nguy Hiểm (Danger)</div>
             <div class="text-sm font-mono font-bold text-white mt-1">&lt; -22 dBm</div>
-            <div class="text-[11px] text-slate-400 mt-1.5">Nguy cơ rớt gói, chập chờn hoặc cổng down ngắt quãng.</div>
+            <div class="text-[11px] text-slate-400 mt-1.5">Nguy cơ rớt gói, không ổn định hoặc cổng down ngắt quãng.</div>
           </div>
           <div class="bg-slate-950 border border-purple-500/30 rounded-xl p-3.5">
             <div class="text-[11px] text-purple-400 font-bold uppercase">Cháy Quang / Quá Tải (Overload)</div>
@@ -536,7 +565,7 @@
       <div>
         <h3 class="text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          3. Tuyệt Chiêu Mở Khóa Module Quang OEM / Bên Thứ 3 (Third-Party SFP)
+          3. Mở Khóa Module Quang OEM / Bên Thứ 3 (Third-Party SFP)
         </h3>
         <div id="sfp-unlock-cards" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
       </div>
@@ -553,7 +582,7 @@
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
       </div>
       <h3 class="text-base font-bold text-white text-center">Xác Thực Quản Trị Viên (Admin Portal)</h3>
-      <p class="text-xs text-slate-400 text-center mt-1">Khu vực dành riêng cho kỹ sư quản trị hệ thống NetCLI Workbench</p>
+      <p class="text-xs text-slate-400 text-center mt-1">Khu vực dành riêng cho kỹ sư quản trị hệ thống TraceDeck</p>
 
       <div class="mt-5 space-y-3">
         <div>
@@ -677,7 +706,7 @@
           </div>
           <div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              Trình Sinh Cấu Hình Nhanh &amp; Giả Lập Console (Quick CLI Builder &amp; Sandbox)
+              <span data-i18n="builder_title">Trình Sinh Cấu Hình Nhanh &amp; Giả Lập Console (Quick CLI Builder &amp; Sandbox)</span>
               <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold">Thực Chiến</span>
             </h2>
             <p class="text-xs text-slate-400">Tick chọn các tính năng mong muốn, kịch bản lệnh hoàn chỉnh sẽ tự động sinh ra và cho phép chạy thử nghiệm mô phỏng</p>
@@ -697,6 +726,7 @@
             <option value="aruba">Aruba / HP (AOS-CX)</option>
             <option value="ruijie">Ruijie Networks (RGOS / Reyee)</option>
             <option value="edgecore">Edgecore Networks (ECS)</option>
+          <option value="draytek">DrayTek VigorOS (Vigor2927/2962/3910)</option>
           </select>
         </div>
       </div>
@@ -886,7 +916,7 @@
           </div>
           <div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              Trạm Chẩn Đoán Sự Cố &amp; Bác Sĩ Mạng Tự Động (AI Diagnostic Doctor &amp; Optimizer)
+              <span data-i18n="diag_title">Trạm Chẩn Đoán Sự Cố &amp; Bác Sĩ Mạng Tự Động (AI Diagnostic Doctor &amp; Optimizer)</span>
               <span class="text-xs px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold">AI Scan 24/7</span>
             </h2>
             <p class="text-xs text-slate-400">Tự động scan cấu hình qua SSH/Telnet, phân tích toàn diện sức khỏe hệ thống, chỉ điểm nguyên nhân gốc rễ và tự động sinh kịch bản Optimizer tối ưu hóa</p>
@@ -944,6 +974,7 @@
                 <option value="aruba">Aruba / HP (AOS-CX)</option>
                 <option value="ruijie">Ruijie Networks (RGOS)</option>
                 <option value="edgecore">Edgecore Networks (ECS)</option>
+          <option value="draytek">DrayTek VigorOS (Vigor2927/2962/3910)</option>
               </select>
 
               <button id="btn-copy-collector-cmd" type="button" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white font-bold flex items-center gap-1.5 shadow-md transition btn-interactive">
@@ -1147,7 +1178,7 @@
           </div>
           <div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              Trạm Chuyên Sâu MikroTik RouterOS
+              <span data-i18n="mt_title">Trạm Chuyên Sâu MikroTik RouterOS</span>
               <span class="text-xs px-2.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold">Chuyên Gia RouterOS v7 &amp; v6</span>
             </h2>
             <p class="text-xs text-slate-400">Bộ công cụ kịch bản chuyên sâu cho RouterOS: Định tuyến đệ quy Failover, BGP v7 Traffic Engineering, MPLS/VPLS, Mangle HTB, Bridge VLAN Line-rate & Tối ưu hóa hiệu năng</p>
@@ -1312,6 +1343,95 @@
     </div>
   </section>
 
+  
+  <!-- VIEW 12: GIỚI THIỆU, BẢN QUYỀN KHANGIT & KIỂM TRA CẬP NHẬT -->
+  <section id="view-about" class="view-panel hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- Left: Author & Copyright Card (5 cols) -->
+      <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+        <div class="flex items-center gap-4">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-rose-500 via-red-500 to-amber-500 flex items-center justify-center text-white font-mono font-black text-2xl shadow-lg">
+            K
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-bold text-white">KhangIT</h2>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Author &amp; Creator</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5" data-i18n="about_role">Nhân viên IT</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 text-xs">
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400" data-i18n="about_copyright">Bản quyền phần mềm:</span>
+            <span class="font-bold text-white">© 2026 KhangIT</span>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400" data-i18n="about_email">Email liên hệ:</span>
+            <a href="mailto:duonganhkhang95@gmail.com" class="font-mono text-emerald-400 hover:underline">duonganhkhang95@gmail.com</a>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400" data-i18n="about_tiktok">TikTok chia sẻ kiến thức:</span>
+            <a href="https://www.tiktok.com/@khangdd72" target="_blank" rel="noopener noreferrer" class="font-mono font-bold text-cyan-400 hover:underline">@khangdd72 ↗</a>
+          </div>
+          <div class="flex items-center justify-between py-1.5">
+            <span class="text-slate-400" data-i18n="about_version">Phiên bản hiện tại:</span>
+            <span id="about-current-ver" class="font-mono font-bold text-amber-400">v2.6.0 (Enterprise)</span>
+          </div>
+        </div>
+
+        <!-- Check for Update Panel -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span data-i18n="update_title">Kiểm Tra Cập Nhật Phiên Bản</span>
+            </h3>
+            <button id="btn-check-update" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm btn-interactive" data-i18n="btn_check_update">
+              Check for Update
+            </button>
+          </div>
+          <div id="update-status-box" class="text-xs text-slate-400 bg-slate-900/80 p-3 rounded-lg border border-slate-800 leading-relaxed">
+            Bấm <strong>Check for Update</strong> để kiểm tra phiên bản mới nhất từ máy chủ và xem lịch sử cập nhật.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Origin Story (7 cols) -->
+      <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="pb-3 border-b border-slate-800">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Behind The Scenes • Câu Chuyện Ra Đời</span>
+          <h3 class="text-lg sm:text-xl font-bold text-white mt-1" data-i18n="story_title">
+            Từ Đêm Trực Phòng Server Lúc 2 Giờ Sáng Đến Trạm Điều Hành Mạng 10 Hãng
+          </h3>
+        </div>
+
+        <div class="space-y-3.5 text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+          <p>
+            Mọi chuyện bắt đầu vào một đêm mưa tầm tã lúc <strong>2 giờ sáng</strong>, khi hệ thống mạng lõi tại một tòa nhà văn phòng bất ngờ không ổn định. Trước mặt tôi là một "ma trận" thiết bị hỗn hợp: Core chạy <strong>Cisco Catalyst</strong>, tầng dưới là <strong>Cisco CBS</strong> và <strong>Edgecore</strong>, tường lửa biên là <strong>FortiGate</strong>, router quay số là <strong>DrayTek</strong> và <strong>MikroTik</strong>, còn nhánh chi nhánh lại dùng <strong>Juniper</strong> và <strong>Huawei</strong>.
+          </p>
+          <p>
+            Trong cơn buồn ngủ và áp lực hàng trăm người dùng sắp đi làm vào buổi sáng, việc nhớ chính xác khi nào gõ <code class="text-emerald-400 font-mono">show interfaces trunk</code>, khi nào phải là <code class="text-cyan-400 font-mono">show interfaces switchport</code>, hay cổng console con CBS phải chỉnh Baudrate <code class="text-amber-400 font-mono">115200</code> thay vì <code class="text-amber-400 font-mono">9600</code> thực sự là một khó khăn lớn. Chưa kể những lúc nhận bàn giao lại một con switch quên mật khẩu mà không có tài liệu hướng dẫn chi tiết từng bước.
+          </p>
+          <p>
+            Đêm hôm đó, sau khi xử lý xong sự cố, tôi tự hứa với bản thân: <em>"Phải tạo ra một trạm làm việc gọn nhẹ, chuẩn xác theo đúng tài liệu gốc của từng hãng, nơi mọi nhân viên IT dù mới nhận bàn giao hay đã có nhiều kinh nghiệm đều có thể tra cứu trong 3 giây, sinh kịch bản an toàn và bắt bệnh hệ thống ngay lập tức."</em>
+          </p>
+          <p>
+            Từ vài dòng ghi chú rời rạc ban đầu, qua hàng chục lần thử nghiệm thực tế trên thiết bị thật, <strong>TraceDeck</strong> đã ra đời — chạy gọn nhẹ chỉ với ~40MB RAM trên Ubuntu Server, hỗ trợ đa ngôn ngữ và luôn sẵn sàng đồng hành cùng anh em IT Network trong mọi ca trực!
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+          <span>Chia sẻ &amp; kết nối cùng cộng đồng IT tại TikTok: <a href="https://www.tiktok.com/@khangdd72" target="_blank" class="text-cyan-400 font-bold hover:underline">@khangdd72</a></span>
+          <span class="text-emerald-400 font-semibold">Made with ❤️ by KhangIT for IT Community</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
   <!-- MODAL: ROSETTA STONE COMPARISON TABLE -->
   <div id="modal-rosetta" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden modal-anim">
@@ -1417,9 +1537,53 @@
     </div>
   </div>
 
+    
+  <!-- RAYCAST COMMAND PALETTE MODAL (⌘K / Ctrl+K) -->
+  <div id="modal-raycast-cmdk" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-start justify-center pt-[12vh] p-4 hidden">
+    <div class="w-full max-w-2xl bg-zinc-900/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.85)] overflow-hidden modal-anim">
+      
+      <!-- Search Input Bar -->
+      <div class="flex items-center gap-3 px-4 py-3.5 border-b border-white/10">
+        <svg class="w-5 h-5 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <input id="raycast-cmdk-input" type="text" placeholder="Gõ tên phân hệ, tác vụ mạng, hãng thiết bị hoặc lệnh (vd: vlan, ospf, draytek, subnet, admin)..." class="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none">
+        <span class="raycast-kbd">ESC</span>
+      </div>
+
+      <!-- Results List -->
+      <div id="raycast-cmdk-results" class="max-h-[55vh] overflow-y-auto p-2 space-y-1 text-xs">
+        <!-- Rendered dynamically by JS -->
+      </div>
+
+      <!-- Raycast Bottom Action Bar -->
+      <div class="px-4 py-2 bg-black/50 border-t border-white/10 flex items-center justify-between text-[11px] text-zinc-400">
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-rose-400">TraceDeck Launcher</span>
+          <span>&bull;</span>
+          <span>by KhangIT</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span><span class="raycast-kbd">↑↓</span> Chọn</span>
+          <span><span class="raycast-kbd">↵</span> Mở</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Footer -->
-  <footer class="mt-auto border-t border-slate-900 bg-slate-950 py-4 text-center text-xs text-slate-500">
-    NetCLI Enterprise Workbench &bull; Hỗ trợ toàn diện Cisco Catalyst, Cisco CBS, Juniper, Fortinet, Huawei, MikroTik, Aruba, Ruijie &amp; Edgecore
+  <footer class="mt-auto border-t border-slate-900 bg-slate-950 py-4 px-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>
+        &copy; 2026 <strong class="text-slate-300">TraceDeck</strong> v2.6 &bull; Bản quyền thuộc về <strong class="text-emerald-400">KhangIT</strong>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="mailto:duonganhkhang95@gmail.com" class="hover:text-emerald-400 transition">duonganhkhang95@gmail.com</a>
+        <span>&bull;</span>
+        <a href="https://www.tiktok.com/@khangdd72" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition">TikTok: @khangdd72</a>
+        <span>&bull;</span>
+        <button type="button" onclick="document.getElementById('nav-btn-about')?.click()" class="text-slate-400 hover:text-white underline transition">Giới thiệu &amp; Update</button>
+      </div>
+    </div>
   </footer>
 
   <!-- SCRIPT DATABASE & LOGIC -->

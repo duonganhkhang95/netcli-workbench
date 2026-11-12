@@ -70,5 +70,13 @@
     "cable": "Cổng RJ45 Console",
     "defaultUser": "admin / admin",
     "note": "Tốc độ console chuẩn là 115200. Bấm phím Esc hoặc Ctrl+B khi khởi động để vào menu bootloader."
+  },
+  {
+    "vendor": "DrayTek (Vigor3910 / VigorSwitch)",
+    "baud": "115200 bps",
+    "settings": "8 Data bits, No parity, 1 Stop bit, No flow control (115200 8-N-1)",
+    "cable": "Cáp RJ45 Console (trên dòng Vigor3910 và VigorSwitch) hoặc quản lý qua Telnet/SSH LAN",
+    "defaultUser": "admin / admin",
+    "note": "Các dòng Vigor2927/2962 chủ yếu truy cập CLI qua SSH/Telnet (mặc định mở trên LAN, tắt trên WAN)."
   }
 ]

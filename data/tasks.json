@@ -3,7 +3,7 @@
     "id": "voice-vlan-phone",
     "title": "Cấu Hình Voice VLAN Cho Điện Thoại IP (IP Phone & PC Cắm Nối Tiếp)",
     "category": "l2",
-    "desc": "Cấu hình cổng switch cấp cùng lúc 2 VLAN: VLAN Voice ưu tiên QoS cho điện thoại và VLAN Data thông thường cho máy tính cắm sau đít điện thoại",
+    "desc": "Cấu hình cổng switch cấp cùng lúc 2 VLAN: VLAN Voice ưu tiên QoS cho điện thoại và VLAN Data thông thường cho máy tính cắm nối tiếp qua cổng PC của điện thoại IP",
     "vendors": {
       "cisco": {
         "cmds": [
@@ -120,6 +120,13 @@
           "exit"
         ],
         "note": "Cấu hình tagged VLAN 20 và untagged Data VLAN."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -127,7 +134,7 @@
     "id": "dhcp-snooping-dai",
     "title": "Chống Cắm Trộm Router WiFi & Giả Mạo ARP (DHCP Snooping & DAI)",
     "category": "sec",
-    "desc": "Chặn triệt để tình trạng nhân viên tự ý cắm router WiFi phụ phát IP bậy làm loạn mạng (Rogue DHCP) và chống tấn công bắt lén gói tin Man-in-the-Middle (ARP Spoofing)",
+    "desc": "Chặn triệt để tình trạng nhân viên tự ý cắm router WiFi phụ cấp phát IP trái phép gây xung đột mạng (Rogue DHCP) và chống tấn công bắt lén gói tin Man-in-the-Middle (ARP Spoofing)",
     "vendors": {
       "cisco": {
         "cmds": [
@@ -240,6 +247,13 @@
           "exit"
         ],
         "note": "Bật DHCP Snooping và trust cổng Uplink."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -344,6 +358,13 @@
           "exit"
         ],
         "note": "SNMPv3 bảo mật trên Edgecore."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -351,7 +372,7 @@
     "id": "third-party-sfp-unlock",
     "title": "Mở Khóa Module Quang Bên Thứ 3 (Third-Party SFP / SFP+ Unlock)",
     "category": "hw",
-    "desc": "BÍ KÍP THỰC CHIẾN 30 NĂM: Ép Switch nhận module quang không chính hãng (OEM, Finisar, FS.com, Cablex...) mà không bị hệ thống tự động khóa cổng (GBIC Invalid / Unsupported)",
+    "desc": "Kinh nghiệm thực chiến: Ép Switch nhận module quang không chính hãng (OEM, Finisar, FS.com, Cablex...) mà không bị hệ thống tự động khóa cổng (GBIC Invalid / Unsupported)",
     "vendors": {
       "cisco": {
         "cmds": [
@@ -423,6 +444,13 @@
           "# Switch Edgecore ECS chuẩn Open Hardware, chấp nhận mọi module quang."
         ],
         "note": "Không bị khóa giới hạn hãng."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -516,6 +544,15 @@
           "exit"
         ],
         "note": "Edgecore quản lý VLAN trong khối vlan database."
+      },
+      "draytek": {
+        "cmds": [
+          "vlan on",
+          "vlan vid 1 {{VLAN_ID}}",
+          "vlan subnet 1 1",
+          "sys commit"
+        ],
+        "note": "DrayTek VigorOS cấu hình VLAN theo index profile (vlan vid <index> <VLAN_ID>) và gán vào LAN subnet."
       }
     }
   },
@@ -623,6 +660,14 @@
           "exit"
         ],
         "note": "Edgecore dùng cú pháp switchport allowed vlan add untagged."
+      },
+      "draytek": {
+        "cmds": [
+          "vlan tagged 1 0",
+          "vlan group 1 0x01",
+          "sys commit"
+        ],
+        "note": "Cấu hình cổng Access (untagged) bằng vlan tagged <index> 0 và bitmask cổng vlan group."
       }
     }
   },
@@ -728,6 +773,14 @@
           "exit"
         ],
         "note": "Thêm tag cho VLAN bằng từ khóa tagged."
+      },
+      "draytek": {
+        "cmds": [
+          "vlan tagged 1 1",
+          "vlan vid 1 {{VLAN_ID}}",
+          "sys commit"
+        ],
+        "note": "Bật chế độ Tagged 802.1Q trên profile VLAN của Vigor Router."
       }
     }
   },
@@ -837,6 +890,13 @@
           "exit"
         ],
         "note": "Cấu hình ưu tiên Root Bridge trên ECS."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -950,6 +1010,13 @@
           "exit"
         ],
         "note": "Edgecore dùng channel-group mode active."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -1047,6 +1114,14 @@
           "exit"
         ],
         "note": "Interface Layer 3 cấu hình dưới interface vlan <ID>."
+      },
+      "draytek": {
+        "cmds": [
+          "ip addr {{IP_ADDR}}",
+          "ip nmask {{NETMASK}}",
+          "sys commit"
+        ],
+        "note": "Đặt IP Gateway và Subnet Mask cho LAN1 (hoặc dùng msubnet addr cho các LAN2, LAN3...)."
       }
     }
   },
@@ -1130,6 +1205,13 @@
           "exit"
         ],
         "note": "Cú pháp chuẩn công nghiệp giống Cisco."
+      },
+      "draytek": {
+        "cmds": [
+          "ip route add 0.0.0.0 0.0.0.0 {{NEXTHOP}} 1",
+          "sys commit"
+        ],
+        "note": "Cú pháp chính thức: ip route add <dst_net> <netmask> <gateway> <iface_idx>."
       }
     }
   },
@@ -1240,6 +1322,13 @@
           "exit"
         ],
         "note": "Cấu hình VRRP trên switch ECS L3."
+      },
+      "draytek": {
+        "cmds": [
+          "ha set enable 1",
+          "ha show"
+        ],
+        "note": "DrayTek Vigor2962/3910 hỗ trợ High Availability (HA / VRRP) qua nhóm lệnh 'ha set' và 'ha status'."
       }
     }
   },
@@ -1348,6 +1437,13 @@
           "exit"
         ],
         "note": "Bật OSPF định tuyến tự động trên Edgecore."
+      },
+      "draytek": {
+        "cmds": [
+          "ip ospf",
+          "ip route"
+        ],
+        "note": "Vigor2962/3910 hỗ trợ OSPF qua lệnh 'ip ospf' hoặc cấu hình trực quan trong Routing >> OSPF trên WebUI."
       }
     }
   },
@@ -1462,6 +1558,13 @@
           "exit"
         ],
         "note": "Cấu hình BGP trên dòng L3 switch ECS4620/5520."
+      },
+      "draytek": {
+        "cmds": [
+          "ip bgp",
+          "ip route"
+        ],
+        "note": "Vigor2962/3910 hỗ trợ BGP qua lệnh 'ip bgp'."
       }
     }
   },
@@ -1592,6 +1695,18 @@
           "exit"
         ],
         "note": "DHCP Server trên switch L3 Edgecore."
+      },
+      "draytek": {
+        "cmds": [
+          "srv dhcp on",
+          "srv dhcp startip 192.168.10.10",
+          "srv dhcp ipcnt 200",
+          "srv dhcp gateway {{IP_ADDR}}",
+          "srv dhcp dns1 8.8.8.8",
+          "srv dhcp dns2 1.1.1.1",
+          "sys commit"
+        ],
+        "note": "DrayTek cấu hình DHCP Server qua bộ lệnh 'srv dhcp' rồi lưu bằng 'sys commit'."
       }
     }
   },
@@ -1688,6 +1803,13 @@
           "exit"
         ],
         "note": "ip helper-address trên SVI interface."
+      },
+      "draytek": {
+        "cmds": [
+          "srv dhcp relay 1 {{NEXTHOP}}",
+          "sys commit"
+        ],
+        "note": "Bật DHCP Relay trỏ về IP máy chủ DHCP nội bộ."
       }
     }
   },
@@ -1793,6 +1915,14 @@
           "exit"
         ],
         "note": "Đồng bộ SNTP trên switch Edgecore."
+      },
+      "draytek": {
+        "cmds": [
+          "sys time",
+          "sys daylightsave",
+          "sys commit"
+        ],
+        "note": "Kiểm tra và đồng bộ thời gian hệ thống qua 'sys time'."
       }
     }
   },
@@ -1891,6 +2021,14 @@
           "# Switch Edgecore ECS chuyên switching/routing, đẩy default route về Firewall để NAT:"
         ],
         "note": "NAT được xử lý ở Firewall ngoài."
+      },
+      "draytek": {
+        "cmds": [
+          "wan enable 1",
+          "show nat",
+          "sys commit"
+        ],
+        "note": "Vigor Router tự động bật NAT Masquerade cho các đường WAN đang kích hoạt."
       }
     }
   },
@@ -1984,6 +2122,14 @@
           "# Cần thực hiện trên Gateway biên."
         ],
         "note": "Chuyển tiếp cổng tại Firewall."
+      },
+      "draytek": {
+        "cmds": [
+          "srv nat openport",
+          "srv nat portmap enable 1 tcp",
+          "sys commit"
+        ],
+        "note": "Quản lý Port Redirection / Open Ports qua 'srv nat portmap' và kiểm tra bằng 'show openport'."
       }
     }
   },
@@ -2103,6 +2249,13 @@
           "exit"
         ],
         "note": "Áp dụng access-list lọc gói trên Edgecore."
+      },
+      "draytek": {
+        "cmds": [
+          "ipf view",
+          "ipf rule"
+        ],
+        "note": "DrayTek quản lý Firewall Filter Rules qua nhóm lệnh 'ipf' (ipf view / ipf set / ipf rule)."
       }
     }
   },
@@ -2229,6 +2382,14 @@
           "# Thực hiện trên Router/Firewall biên phía trước switch."
         ],
         "note": "Cần router hỗ trợ VPN."
+      },
+      "draytek": {
+        "cmds": [
+          "vpn l2lset",
+          "vpn list",
+          "sys commit"
+        ],
+        "note": "Cấu hình và kiểm tra đường hầm IPsec LAN-to-LAN qua 'vpn l2lset' và 'vpn list'."
       }
     }
   },
@@ -2344,6 +2505,15 @@
           "exit"
         ],
         "note": "Cổng console Edgecore thường chạy 115200 baud."
+      },
+      "draytek": {
+        "cmds": [
+          "sys admin {{USER}}",
+          "sys passwd {{PASS}}",
+          "mngt sshport 22",
+          "sys commit"
+        ],
+        "note": "Đặt tài khoản quản trị, đổi mật khẩu và thiết lập cổng SSH qua 'mngt sshport'."
       }
     }
   },
@@ -2351,7 +2521,7 @@
     "id": "save-backup",
     "title": "Lưu Cấu Hình & Sao Lưu (Save / Commit / Export)",
     "category": "mgmt",
-    "desc": "Lưu dữ liệu cấu hình từ RAM (running) sang Flash (startup) để không bị mất khi cúp điện hoặc reboot",
+    "desc": "Lưu dữ liệu cấu hình từ RAM (running) sang Flash (startup) để không bị mất khi mất điện hoặc reboot",
     "vendors": {
       "cisco": {
         "cmds": [
@@ -2375,7 +2545,7 @@
           "# hoặc hẹn giờ rollback an toàn:",
           "commit confirmed 5"
         ],
-        "note": "Tuyệt chiêu: commit confirmed 5 tự động hoàn tác sau 5 phút nếu mất kết nối!"
+        "note": "Mẹo hữu ích: commit confirmed 5 tự động hoàn tác sau 5 phút nếu mất kết nối!"
       },
       "fortinet": {
         "cmds": [
@@ -2422,6 +2592,14 @@
           "# Nhấn Enter xác nhận ghi vào startup1.cfg trong Flash"
         ],
         "note": "Thực hiện ở Console#."
+      },
+      "draytek": {
+        "cmds": [
+          "sys commit",
+          "# Khởi động lại nếu đổi cấu hình LAN/DHCP:",
+          "sys reboot"
+        ],
+        "note": "Lệnh 'sys commit' ghi cấu hình vào Flash trên DrayTek VigorOS."
       }
     }
   },
@@ -2429,7 +2607,7 @@
     "id": "ts-optical-sfp",
     "title": "Kiểm Tra Công Suất Quang SFP (DDM / DOM Rx/Tx Power)",
     "category": "ts",
-    "desc": "Đo mức suy hao quang (dBm) tại cổng SFP khi đường truyền chập chờn, down/up liên tục hoặc mất tín hiệu",
+    "desc": "Đo mức suy hao quang (dBm) tại cổng SFP khi đường truyền không ổn định, down/up liên tục hoặc mất tín hiệu",
     "vendors": {
       "cisco": {
         "cmds": [
@@ -2485,6 +2663,13 @@
           "show interfaces transceiver ethernet {{TRUNK_PORT}}"
         ],
         "note": "Kiểm tra tín hiệu quang thực tế trên switch ECS."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -2492,7 +2677,7 @@
     "id": "ts-crc-counters",
     "title": "Kiểm Tra Lỗi Cáp Mạng, CRC Error & Gói Rớt (Drops & Duplex)",
     "category": "ts",
-    "desc": "Xác định nhanh nguyên nhân mạng chập chờn do bấm cáp hỏng, lệch Duplex (Half/Full) hay nghẽn bộ đệm cổng",
+    "desc": "Xác định nhanh nguyên nhân mạng không ổn định do bấm cáp hỏng, lệch Duplex (Half/Full) hay nghẽn bộ đệm cổng",
     "vendors": {
       "cisco": {
         "cmds": [
@@ -2552,6 +2737,13 @@
           "show interfaces counters ethernet {{ACCESS_PORT}}"
         ],
         "note": "Kiểm tra bộ đếm lỗi phần cứng cổng."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -2645,6 +2837,13 @@
           "exit"
         ],
         "note": "Reset cổng bị block."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -2720,6 +2919,13 @@
           "show spanning-tree"
         ],
         "note": "Quan sát sự thay đổi MAC giữa các cổng."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -2794,6 +3000,14 @@
           "traceroute {{NEXTHOP}}"
         ],
         "note": "Kiểm tra đường truyền MTU từ console."
+      },
+      "draytek": {
+        "cmds": [
+          "ip ping {{NEXTHOP}}",
+          "ip tracert {{NEXTHOP}}",
+          "wan detect_mtu 1"
+        ],
+        "note": "DrayTek dùng 'ip ping', 'ip tracert' và có sẵn lệnh 'wan detect_mtu' để dò MTU đường truyền!"
       }
     }
   },
@@ -2869,6 +3083,14 @@
           "show memory"
         ],
         "note": "Kiểm tra mức tải CPU hệ thống."
+      },
+      "draytek": {
+        "cmds": [
+          "sys health",
+          "show session",
+          "show traffic"
+        ],
+        "note": "Lệnh 'sys health' hiển thị mức tải CPU, RAM và số session NAT đang hoạt động."
       }
     }
   },
@@ -2942,6 +3164,13 @@
           "monitor session 1 destination interface ethernet {{TRUNK_PORT}}"
         ],
         "note": "Cấu hình mirror cổng phân tích lưu lượng."
+      },
+      "draytek": {
+        "cmds": [
+          "# Tính năng chuyên biệt cho Switch L2/L3 (kiểm tra trên VigorSwitch hoặc WebUI DrayTek).",
+          "show status"
+        ],
+        "note": "Tham khảo tài liệu VigorOS CLI hoặc VigorSwitch CLI."
       }
     }
   },
@@ -3015,6 +3244,13 @@
           "show logging"
         ],
         "note": "Xem nhật ký hoạt động hệ thống."
+      },
+      "draytek": {
+        "cmds": [
+          "log",
+          "sys syslog"
+        ],
+        "note": "Xem nhật ký hệ thống trực tiếp bằng lệnh 'log'."
       }
     }
   }

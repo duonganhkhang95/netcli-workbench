@@ -23,9 +23,9 @@
     "keepConfig": "GIỮ NGUYÊN 100% CẤU HÌNH CŨ",
     "downtime": "Khoảng 2 - 4 phút",
     "steps": [
-      "Bước 1 (Kết nối PuTTY - Chú ý Baudrate): Cắm cáp Console. Mở PuTTY -> chọn Serial -> Speed BẮT BUỘC điền 115200 (nếu để 9600 màn hình sẽ đen xì không hiện chữ) -> bấm Open.",
+      "Bước 1 (Kết nối PuTTY - Chú ý Baudrate): Cắm cáp Console. Mở PuTTY -> chọn Serial -> Speed BẮT BUỘC điền 115200 (nếu để 9600 màn hình sẽ không hiển thị dữ liệu) -> bấm Open.",
       "Bước 2 (Canh bấm phím Esc): Rút nguồn cắm lại Switch. Nhìn chằm chằm màn hình PuTTY, ngay khi thấy dòng chữ đếm ngược 'Press Esc to enter Startup Menu' -> bấm phím Esc liên tục.",
-      "Bước 3 (Chọn mục phá pass): Menu Startup hiện ra 7 dòng. Bạn bấm phím số 3 trên bàn phím (Password Recovery Procedure).",
+      "Bước 3 (Chọn mục khôi phục mật khẩu): Menu Startup hiện ra 7 dòng. Bạn bấm phím số 3 trên bàn phím (Password Recovery Procedure).",
       "Bước 4 (Chờ vào thẳng Switch): Switch sẽ tự khởi động tiếp và tự động bỏ qua màn hình hỏi mật khẩu khi kết nối qua dây Console.",
       "Bước 5 (Đổi lại mật khẩu mới & Lưu): Khi màn hình hiện dấu nhắc 'switch#', bạn gõ lần lượt:\n  configure\n  username cisco password MatKhauMoi@2026 privilege 15\n  exit\n  write memory\n(Bấm 'y' nếu máy hỏi xác nhận ghi đè)."
     ],
@@ -89,7 +89,7 @@
     "steps": [
       "CÁCH 1 (Nếu bạn muốn XÓA SẠCH làm lại từ đầu - Dễ nhất):",
       "  1. Rút dây nguồn Router MikroTik ra.",
-      "  2. Dùng tăm/que chọc SIM nhấn giữ chặt nút 'RES' (Reset) trên vỏ máy.",
+      "  2. Dùng dụng cụ đầu nhỏ nhấn giữ chặt nút 'RES' (Reset) trên vỏ máy.",
       "  3. Vừa giữ nút Reset vừa cắm dây nguồn lại.",
       "  4. Giữ tiếp khoảng 5 giây cho đến khi đèn 'USR' hoặc 'ACT' bắt đầu nhấp nháy thì thả tay ra.",
       "  5. Mở phần mềm Winbox trên máy tính -> tìm thiết bị -> đăng nhập user 'admin', mật khẩu để trống.",
@@ -129,6 +129,22 @@
       "Bước 4 (Nạp lại cấu hình cũ): Khi vào được dấu nhắc 'Console#', gõ:\n  copy startup1.cfg running-config\n(Nhấn Enter nếu được hỏi xác nhận).",
       "Bước 5 (Đổi mật khẩu mới & Lưu lại): Gõ lần lượt:\n  configure\n  username admin access-level 15 password 0 MatKhauMoi@2026\n  exit\n  copy running-config startup-config\n(Nhấn Enter xác nhận lưu đè vào startup1.cfg)."
     ],
-    "warning": "Nhớ bước cuối 'copy running-config startup-config', nếu quên thì lần sau cúp điện sẽ quay lại mật khẩu cũ."
+    "warning": "Nhớ bước cuối 'copy running-config startup-config', nếu quên thì lần sau mất điện sẽ quay lại mật khẩu cũ."
+  },
+  {
+    "vendor": "DrayTek (Vigor Router / VigorSwitch)",
+    "icon": "border-orange-500/30 text-orange-400 bg-orange-500/10",
+    "baud": "115200 bps (hoặc nút Reset cứng)",
+    "keepConfig": "CẨN THẬN: Nút Reset cứng sẽ XÓA SẠCH cấu hình về mặc định (admin/admin)!",
+    "downtime": "Khoảng 2 - 3 phút",
+    "steps": [
+      "Bước 1 (Kiểm tra xem còn file backup .cfg không): Trước khi reset, hỏi lại người bàn giao cũ xem có lưu file backup cấu hình (.cfg) trên máy tính hoặc VigorACS không.",
+      "Bước 2 (Reset bằng nút cứng khi đang cắm điện):",
+      "  1. Cắm điện cho Router DrayTek khởi động lên bình thường (chờ đèn ACT nhấp nháy đều).",
+      "  2. Dùng dụng cụ đầu nhỏ nhấn giữ nút 'Factory Reset' trên mặt trước khoảng 5 - 10 giây.",
+      "  3. Quan sát thấy đèn ACT nhấp nháy RẤT NHANH thì thả tay ra.",
+      "Bước 3 (Đăng nhập mặc định): Chờ 1-2 phút cho Router khởi động lại. Cắm dây mạng vào cổng LAN, mở trình duyệt vào IP 192.168.1.1, đăng nhập user 'admin' / password 'admin'."
+    ],
+    "warning": "DrayTek không hỗ trợ đổi mật khẩu mà giữ cấu hình qua Console như Cisco/Juniper; nếu mất pass hoàn toàn và không có file backup, bạn bắt buộc phải Reset cứng và cấu hình lại từ đầu."
   }
 ]

@@ -12,7 +12,8 @@
     "mikrotik": "/ip address print",
     "ruijie": "show ip interface brief",
     "edgecore": "show ip interface",
-    "tip": "Status Up + Protocol Up = thông tốt. Status Up + Protocol Down = lỗi đóng gói L2/lệch Keepalive. Status Admin Down = cổng bị tắt bằng shutdown."
+    "tip": "Status Up + Protocol Up = thông tốt. Status Up + Protocol Down = lỗi đóng gói L2/lệch Keepalive. Status Admin Down = cổng bị tắt bằng shutdown.",
+    "draytek": "show status"
   },
   {
     "id": "sh-ip-int-detail",
@@ -27,7 +28,8 @@
     "mikrotik": "/ip address print detail where interface={{ACCESS_PORT}}",
     "ruijie": "show ip interface {{ACCESS_PORT}}",
     "edgecore": "show ip interface {{ACCESS_PORT}}",
-    "tip": "Dùng để kiểm tra MTU, Proxy ARP có bị bật không, và IP Helper-address có gán đúng không."
+    "tip": "Dùng để kiểm tra MTU, Proxy ARP có bị bật không, và IP Helper-address có gán đúng không.",
+    "draytek": "show lan"
   },
   {
     "id": "sh-ip-protocols",
@@ -42,7 +44,8 @@
     "mikrotik": "/routing ospf instance print",
     "ruijie": "show ip protocols",
     "edgecore": "show ip protocols",
-    "tip": "Xem các mạng đang tham gia định tuyến trong mục 'Routing for Networks:' và Administrative Distance (AD)."
+    "tip": "Xem các mạng đang tham gia định tuyến trong mục 'Routing for Networks:' và Administrative Distance (AD).",
+    "draytek": "ip route"
   },
   {
     "id": "sh-int-status",
@@ -57,7 +60,8 @@
     "mikrotik": "/interface print stats",
     "ruijie": "show interfaces status",
     "edgecore": "show interfaces status",
-    "tip": "Nếu cổng ghi \"notconnect\" = chưa cắm cáp hoặc đầu kia tắt; \"err-disabled\" = bị switch tự khóa do loop/BPDU."
+    "tip": "Nếu cổng ghi \"notconnect\" = chưa cắm cáp hoặc đầu kia tắt; \"err-disabled\" = bị switch tự khóa do loop/BPDU.",
+    "draytek": "wan status"
   },
   {
     "id": "sh-int-trunk",
@@ -72,7 +76,8 @@
     "mikrotik": "/interface bridge vlan print",
     "ruijie": "show interfaces trunk",
     "edgecore": "show interfaces switchport",
-    "tip": "Phần \"Vlans in spanning tree forwarding state and not pruned\" cho biết chính xác VLAN nào đang thông qua trunk."
+    "tip": "Phần \"Vlans in spanning tree forwarding state and not pruned\" cho biết chính xác VLAN nào đang thông qua trunk.",
+    "draytek": "vlan status"
   },
   {
     "id": "sh-int-desc",
@@ -87,7 +92,8 @@
     "mikrotik": "/interface print where comment!=\"\"",
     "ruijie": "show interfaces description",
     "edgecore": "show interfaces description",
-    "tip": "Luôn đặt description cho cổng để khi console ban đêm không phải dò từng sợi dây cáp."
+    "tip": "Luôn đặt description cho cổng để khi console ban đêm không phải dò từng sợi dây cáp.",
+    "draytek": "show lan"
   },
   {
     "id": "sh-int-switchport",
@@ -102,7 +108,8 @@
     "mikrotik": "/interface bridge port print where interface={{ACCESS_PORT}}",
     "ruijie": "show interfaces {{ACCESS_PORT}} switchport",
     "edgecore": "show interfaces ethernet {{ACCESS_PORT}} switchport",
-    "tip": "Kiểm tra dòng \"Administrative Mode\" (cấu hình mong muốn) vs \"Operational Mode\" (chế độ thực tế đang chạy)."
+    "tip": "Kiểm tra dòng \"Administrative Mode\" (cấu hình mong muốn) vs \"Operational Mode\" (chế độ thực tế đang chạy).",
+    "draytek": "vlan status"
   },
   {
     "id": "sh-mac-table",
@@ -117,7 +124,8 @@
     "mikrotik": "/interface bridge host print",
     "ruijie": "show mac-address-table",
     "edgecore": "show mac-address-table",
-    "tip": "Để lọc riêng 1 cổng: \"show mac address-table interface Gi0/1\" hoặc theo VLAN: \"... vlan 10\"."
+    "tip": "Để lọc riêng 1 cổng: \"show mac address-table interface Gi0/1\" hoặc theo VLAN: \"... vlan 10\".",
+    "draytek": "ip arp"
   },
   {
     "id": "sh-lacp-summary",
@@ -132,7 +140,8 @@
     "mikrotik": "/interface bonding print",
     "ruijie": "show aggregatePort {{LAG_ID}} summary",
     "edgecore": "show interfaces status port-channel",
-    "tip": "Cờ \"P\" (in port-channel) = chạy chuẩn. Cờ \"D\" (down) hoặc \"s\" (suspended) = lệch cấu hình tốc độ/VLAN 2 đầu."
+    "tip": "Cờ \"P\" (in port-channel) = chạy chuẩn. Cờ \"D\" (down) hoặc \"s\" (suspended) = lệch cấu hình tốc độ/VLAN 2 đầu.",
+    "draytek": "switch status"
   },
   {
     "id": "sh-stp-brief",
@@ -147,7 +156,8 @@
     "mikrotik": "/interface bridge port print",
     "ruijie": "show spanning-tree brief",
     "edgecore": "show spanning-tree",
-    "tip": "Nếu thấy dòng \"This bridge is the root\" = thiết bị này đang là Master quản lý cấu trúc chống loop của VLAN."
+    "tip": "Nếu thấy dòng \"This bridge is the root\" = thiết bị này đang là Master quản lý cấu trúc chống loop của VLAN.",
+    "draytek": "switch status"
   },
   {
     "id": "sh-cdp-lldp",
@@ -162,7 +172,8 @@
     "mikrotik": "/ip neighbor print",
     "ruijie": "show lldp neighbors detail",
     "edgecore": "show lldp info remote-device",
-    "tip": "Cực kỳ lợi hại khi tiếp quản hệ thống mạng mới mà không có sơ đồ hoàn công (drawing)."
+    "tip": "Cực kỳ lợi hại khi tiếp quản hệ thống mạng mới mà không có sơ đồ hoàn công (drawing).",
+    "draytek": "switch list"
   },
   {
     "id": "sh-vlan-brief",
@@ -177,7 +188,8 @@
     "mikrotik": "/interface vlan print",
     "ruijie": "show vlan brief",
     "edgecore": "show vlan",
-    "tip": "Cổng Trunk sẽ không hiển thị trong lệnh \"show vlan brief\" (muốn xem trunk phải gõ \"show interfaces trunk\")."
+    "tip": "Cổng Trunk sẽ không hiển thị trong lệnh \"show vlan brief\" (muốn xem trunk phải gõ \"show interfaces trunk\").",
+    "draytek": "vlan status"
   },
   {
     "id": "sh-port-security",
@@ -192,7 +204,8 @@
     "mikrotik": "/interface bridge port print",
     "ruijie": "show port-security interface {{ACCESS_PORT}}",
     "edgecore": "show port security",
-    "tip": "Nếu Violation Count > 0 thì cổng có thể đã bị shutdown do ai đó cắm switch phụ hoặc thiết bị lạ."
+    "tip": "Nếu Violation Count > 0 thì cổng có thể đã bị shutdown do ai đó cắm switch phụ hoặc thiết bị lạ.",
+    "draytek": "ip bindmac"
   },
   {
     "id": "sh-ip-route",
@@ -207,7 +220,8 @@
     "mikrotik": "/ip route print",
     "ruijie": "show ip route",
     "edgecore": "show ip route",
-    "tip": "Dấu \"C\" = Connected trực tiếp, \"S\" = Static, \"O\" = OSPF, \"B\" = BGP, \"S*\" = Tuyến đường Default Route 0.0.0.0/0."
+    "tip": "Dấu \"C\" = Connected trực tiếp, \"S\" = Static, \"O\" = OSPF, \"B\" = BGP, \"S*\" = Tuyến đường Default Route 0.0.0.0/0.",
+    "draytek": "ip route"
   },
   {
     "id": "sh-ip-route-proto",
@@ -222,7 +236,8 @@
     "mikrotik": "/ip route print where ospf",
     "ruijie": "show ip route ospf",
     "edgecore": "show ip route ospf",
-    "tip": "Thay bằng \"bgp\" hoặc \"static\" để xem các bảng giao thức khác."
+    "tip": "Thay bằng \"bgp\" hoặc \"static\" để xem các bảng giao thức khác.",
+    "draytek": "ip ospf"
   },
   {
     "id": "sh-ip-arp",
@@ -237,7 +252,8 @@
     "mikrotik": "/ip arp print",
     "ruijie": "show arp",
     "edgecore": "show arp",
-    "tip": "Cực kỳ tiện khi cần tìm vị trí vật lý của một IP đang bị nhiễm mã độc hoặc chiếm dụng mạng."
+    "tip": "Cực kỳ tiện khi cần tìm vị trí vật lý của một IP đang bị nhiễm mã độc hoặc chiếm dụng mạng.",
+    "draytek": "ip arp"
   },
   {
     "id": "sh-fhrp-gateway",
@@ -252,7 +268,8 @@
     "mikrotik": "/interface vrrp print",
     "ruijie": "show standby brief",
     "edgecore": "show vrrp",
-    "tip": "Nếu cả 2 con switch đều báo trạng thái \"Active/Master\" = đang bị Split-Brain do đứt kết nối Heartbeat giữa 2 con!"
+    "tip": "Nếu cả 2 con switch đều báo trạng thái \"Active/Master\" = đang bị Split-Brain do đứt kết nối Heartbeat giữa 2 con!",
+    "draytek": "ha status"
   },
   {
     "id": "sh-ospf-neighbor",
@@ -267,7 +284,8 @@
     "mikrotik": "/routing ospf neighbor print",
     "ruijie": "show ip ospf neighbor",
     "edgecore": "show ip ospf neighbor",
-    "tip": "Trạng thái chuẩn là \"FULL/DR\" hoặc \"FULL/BDR\" (hoặc \"2WAY/DROTHER\" nếu nhiều router trên cùng switch). Kẹt ở EXSTART = lệch MTU!"
+    "tip": "Trạng thái chuẩn là \"FULL/DR\" hoặc \"FULL/BDR\" (hoặc \"2WAY/DROTHER\" nếu nhiều router trên cùng switch). Kẹt ở EXSTART = lệch MTU!",
+    "draytek": "ip ospf"
   },
   {
     "id": "sh-ospf-database",
@@ -282,7 +300,8 @@
     "mikrotik": "/routing ospf lsa print",
     "ruijie": "show ip ospf database",
     "edgecore": "show ip ospf database",
-    "tip": "Dùng để xác minh xem router vùng khác hoặc default route từ ngoài đã đẩy vào bảng dữ liệu chưa."
+    "tip": "Dùng để xác minh xem router vùng khác hoặc default route từ ngoài đã đẩy vào bảng dữ liệu chưa.",
+    "draytek": "ip ospf"
   },
   {
     "id": "sh-bgp-summary",
@@ -297,7 +316,8 @@
     "mikrotik": "/routing bgp session print",
     "ruijie": "show ip bgp summary",
     "edgecore": "show ip bgp summary",
-    "tip": "Nếu cột \"State/PfxRcd\" hiện SỐ NGUYÊN (ví dụ: 850000) = đã Established và nhận ngần đó route. Nếu hiện chữ (Active/Idle) = BGP đang DOWN!"
+    "tip": "Nếu cột \"State/PfxRcd\" hiện SỐ NGUYÊN (ví dụ: 850000) = đã Established và nhận ngần đó route. Nếu hiện chữ (Active/Idle) = BGP đang DOWN!",
+    "draytek": "ip bgp"
   },
   {
     "id": "sh-bgp-routes",
@@ -312,7 +332,8 @@
     "mikrotik": "/routing bgp session print detail where name~\"{{NEXTHOP}}\"",
     "ruijie": "show ip bgp neighbors {{NEXTHOP}} advertised-routes",
     "edgecore": "show ip bgp neighbors {{NEXTHOP}} advertised-routes",
-    "tip": "Cực kỳ quan trọng để đảm bảo bạn không vô tình quảng bá toàn bộ dải IP riêng tư RFC1918 ra Internet."
+    "tip": "Cực kỳ quan trọng để đảm bảo bạn không vô tình quảng bá toàn bộ dải IP riêng tư RFC1918 ra Internet.",
+    "draytek": "ip bgp"
   },
   {
     "id": "sh-dhcp-binding",
@@ -327,7 +348,8 @@
     "mikrotik": "/ip dhcp-server lease print",
     "ruijie": "show ip dhcp binding",
     "edgecore": "show ip dhcp binding",
-    "tip": "Dùng để kiểm tra nhanh IP của máy in, camera mới cắm mà không cần phần mềm quét IP."
+    "tip": "Dùng để kiểm tra nhanh IP của máy in, camera mới cắm mà không cần phần mềm quét IP.",
+    "draytek": "srv dhcp status"
   },
   {
     "id": "sh-dhcp-conflict",
@@ -342,7 +364,8 @@
     "mikrotik": "/ip dhcp-server alert print",
     "ruijie": "show ip dhcp conflict",
     "edgecore": "show ip dhcp conflict",
-    "tip": "Xóa danh sách IP bị kẹt xung đột để cấp lại: \"clear ip dhcp conflict *\"."
+    "tip": "Xóa danh sách IP bị kẹt xung đột để cấp lại: \"clear ip dhcp conflict *\".",
+    "draytek": "srv dhcp status"
   },
   {
     "id": "sh-nat-trans",
@@ -357,7 +380,8 @@
     "mikrotik": "/ip firewall connection print",
     "ruijie": "show ip nat translations",
     "edgecore": "# NAT thực hiện ở Gateway",
-    "tip": "Lệnh này giúp phát hiện ngay máy nào trong mạng đang cắm torrent hoặc dính botnet bắn hàng ngàn session làm nghẽn router."
+    "tip": "Lệnh này giúp phát hiện ngay máy nào trong mạng đang cắm torrent hoặc dính botnet bắn hàng ngàn session làm nghẽn router.",
+    "draytek": "show nat"
   },
   {
     "id": "sh-acl-matches",
@@ -372,7 +396,8 @@
     "mikrotik": "/ip firewall filter print stats",
     "ruijie": "show access-lists",
     "edgecore": "show access-lists",
-    "tip": "Nếu số \"matches\" tăng lên liên tục = luật đang hoạt động và đang chặn/cho phép đúng gói tin đó."
+    "tip": "Nếu số \"matches\" tăng lên liên tục = luật đang hoạt động và đang chặn/cho phép đúng gói tin đó.",
+    "draytek": "ipf view"
   },
   {
     "id": "sh-ipsec-sa",
@@ -387,7 +412,8 @@
     "mikrotik": "/ip ipsec active-peers print",
     "ruijie": "show crypto ipsec sa",
     "edgecore": "# Không hỗ trợ VPN",
-    "tip": "Xem các dòng \"#pkts encaps\" và \"#pkts decaps\". Nếu encaps tăng mà decaps = 0 là đầu bên kia nhận được nhưng không trả lời gói!"
+    "tip": "Xem các dòng \"#pkts encaps\" và \"#pkts decaps\". Nếu encaps tăng mà decaps = 0 là đầu bên kia nhận được nhưng không trả lời gói!",
+    "draytek": "vpn list"
   },
   {
     "id": "sh-inventory-sn",
@@ -402,7 +428,8 @@
     "mikrotik": "/system routerboard print",
     "ruijie": "show inventory",
     "edgecore": "show inventory",
-    "tip": "Lệnh bắt buộc phải gõ trước khi mở case bảo hành hoặc gia hạn hợp đồng SmartNet / FortiCare với hãng."
+    "tip": "Lệnh bắt buộc phải gõ trước khi mở case bảo hành hoặc gia hạn hợp đồng SmartNet / FortiCare với hãng.",
+    "draytek": "sys version"
   },
   {
     "id": "sh-env-health",
@@ -417,7 +444,8 @@
     "mikrotik": "/system health print",
     "ruijie": "show environment",
     "edgecore": "show system",
-    "tip": "Đặc biệt quan trọng trong phòng server: cảnh báo sớm nguy cơ thiết bị tự sập nguồn do quá nhiệt (Thermal Overheat)."
+    "tip": "Đặc biệt quan trọng trong phòng server: cảnh báo sớm nguy cơ thiết bị tự sập nguồn do quá nhiệt (Thermal Overheat).",
+    "draytek": "sys health"
   },
   {
     "id": "sh-poe-status",
@@ -432,7 +460,8 @@
     "mikrotik": "/interface ethernet poe print",
     "ruijie": "show power inline",
     "edgecore": "show poe powersupply",
-    "tip": "Nếu Camera hoặc AP bị restart liên tục, kiểm tra xem tổng công suất Watt của Switch có bị chạm ngưỡng 100% Budget không."
+    "tip": "Nếu Camera hoặc AP bị restart liên tục, kiểm tra xem tổng công suất Watt của Switch có bị chạm ngưỡng 100% Budget không.",
+    "draytek": "switch status"
   },
   {
     "id": "sh-stack-status",
@@ -447,7 +476,8 @@
     "mikrotik": "# MikroTik không có hardware stack",
     "ruijie": "show vsu",
     "edgecore": "show stack",
-    "tip": "Xem cột \"Role\" (Master/Member/Standby) và \"State\" (Ready/Progressing)."
+    "tip": "Xem cột \"Role\" (Master/Member/Standby) và \"State\" (Ready/Progressing).",
+    "draytek": "ha status"
   },
   {
     "id": "sh-version-uptime",
@@ -462,7 +492,8 @@
     "mikrotik": "/system resource print",
     "ruijie": "show version",
     "edgecore": "show version",
-    "tip": "Dòng \"uptime is ...\" cho biết thiết bị có bị reboot ngầm lúc nửa đêm do cúp điện hay sập nguồn không."
+    "tip": "Dòng \"uptime is ...\" cho biết thiết bị có bị reboot ngầm lúc nửa đêm do mất điện hay sập nguồn không.",
+    "draytek": "sys version"
   },
   {
     "id": "sh-cpu-memory",
@@ -477,7 +508,8 @@
     "mikrotik": "/tool profile",
     "ruijie": "show cpu",
     "edgecore": "show process cpu",
-    "tip": "Nếu CPU duy trì > 85% trong 5 phút -> Cần kiểm tra ngay bão broadcast, loop mạng hoặc lỗi tiến trình dịch vụ."
+    "tip": "Nếu CPU duy trì > 85% trong 5 phút -> Cần kiểm tra ngay bão broadcast, loop mạng hoặc lỗi tiến trình dịch vụ.",
+    "draytek": "sys health"
   },
   {
     "id": "sh-logging-buffer",
@@ -492,7 +524,8 @@
     "mikrotik": "/log print follow-only",
     "ruijie": "show logging",
     "edgecore": "show logging",
-    "tip": "Có thể lọc riêng theo từ khóa: \"show logging | include down\" hoặc \"... err\"."
+    "tip": "Có thể lọc riêng theo từ khóa: \"show logging | include down\" hoặc \"... err\".",
+    "draytek": "log"
   },
   {
     "id": "sh-clock-ntp",
@@ -507,7 +540,8 @@
     "mikrotik": "/system clock print",
     "ruijie": "show clock detail",
     "edgecore": "show sntp",
-    "tip": "Nếu giờ sai, toàn bộ log hệ thống sẽ bị sai lệch mốc thời gian, khiến việc điều tra sự cố gặp rất nhiều khó khăn."
+    "tip": "Nếu giờ sai, toàn bộ log hệ thống sẽ bị sai lệch mốc thời gian, khiến việc điều tra sự cố gặp rất nhiều khó khăn.",
+    "draytek": "sys time"
   },
   {
     "id": "sh-users-sessions",
@@ -522,7 +556,8 @@
     "mikrotik": "/user active print",
     "ruijie": "show users",
     "edgecore": "show users",
-    "tip": "Giúp tránh việc 2 kỹ sư cùng vào sửa cấu hình một lúc gây đè dữ liệu của nhau."
+    "tip": "Giúp tránh việc 2 kỹ sư cùng vào sửa cấu hình một lúc gây đè dữ liệu của nhau.",
+    "draytek": "show session"
   },
   {
     "id": "sh-boot-config",
@@ -537,7 +572,8 @@
     "mikrotik": "/system routerboard settings print",
     "ruijie": "show boot",
     "edgecore": "show boot",
-    "tip": "Luôn kiểm tra lệnh này sau khi nâng cấp firmware để đảm bảo thiết bị không bị rơi vào ROMMON khi khởi động lại!"
+    "tip": "Luôn kiểm tra lệnh này sau khi nâng cấp firmware để đảm bảo thiết bị không bị rơi vào ROMMON khi khởi động lại!",
+    "draytek": "sys cfg"
   },
   {
     "id": "sh-tech-support",
@@ -552,6 +588,7 @@
     "mikrotik": "/system sup-output name=support_bundle",
     "ruijie": "show tech-support",
     "edgecore": "show tech-support",
-    "tip": "Lệnh này xuất ra dữ liệu rất dài (hàng ngàn dòng), nên redirect ra file TFTP hoặc file text trên USB."
+    "tip": "Lệnh này xuất ra dữ liệu rất dài (hàng ngàn dòng), nên redirect ra file TFTP hoặc file text trên USB.",
+    "draytek": "sys health"
   }
 ]

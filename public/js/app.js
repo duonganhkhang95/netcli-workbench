@@ -103,7 +103,9 @@ async function fetchAllData() {
       ['initQuickBuilder', initQuickBuilder],
       ['initDiagnosticAssistant', initDiagnosticAssistant],
       ['initMikroTikSuite', initMikroTikSuite],
-      ['renderFiberOptics', renderFiberOptics]
+      ['renderFiberOptics', renderFiberOptics],
+      ['initThemeAndUpdate', initThemeAndUpdate],
+      ['initRaycastPalette', initRaycastPalette]
     ];
     for (const [name, fn] of initSteps) {
       try {
@@ -783,25 +785,28 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       const targetViewId = btn.getAttribute('data-view');
       
-      // Update active states
+      // Update Dynamic Island active pill states
       document.querySelectorAll('.nav-view-btn').forEach(b => {
-        b.classList.remove('bg-emerald-600', 'text-white', 'font-bold');
-        if (b.classList.contains('rounded-full')) {
-          b.classList.add('bg-slate-900', 'text-slate-300');
-        } else if (!b.closest('#dropdown-tools-menu')) {
-          b.classList.add('text-slate-400');
+        b.classList.remove('island-active', 'bg-emerald-600', 'text-white', 'font-bold');
+        if (!b.closest('#dropdown-tools-menu')) {
+          b.classList.add('text-slate-300');
         }
       });
 
-      btn.classList.add('bg-emerald-600', 'text-white', 'font-bold');
-      btn.classList.remove('text-slate-400', 'bg-slate-900');
+      const targetViewBtns = document.querySelectorAll(`.nav-view-btn[data-view="${targetViewId}"]`);
+      targetViewBtns.forEach(tb => {
+        if (!tb.closest('#dropdown-tools-menu')) {
+          tb.classList.add('island-active', 'font-bold');
+          tb.classList.remove('text-slate-300');
+        }
+      });
 
       // Update Dropdown label if clicked from inside dropdown
       const subLabel = btn.querySelector('.font-semibold')?.textContent;
       if (subLabel && labelActiveTool) {
         labelActiveTool.textContent = subLabel;
         btnDropdown.classList.add('text-amber-300', 'bg-slate-900');
-      } else if (labelActiveTool && ['view-generator', 'view-showcmds', 'view-subnet', 'view-builder', 'view-diagnose', 'view-mikrotik'].includes(targetViewId)) {
+      } else if (labelActiveTool && ['view-generator', 'view-showcmds', 'view-subnet', 'view-builder', 'view-diagnose', 'view-mikrotik', 'view-about'].includes(targetViewId)) {
         labelActiveTool.textContent = 'Sổ Tay Kỹ Sư';
         btnDropdown.classList.remove('text-amber-300', 'bg-slate-900');
       }
@@ -1612,7 +1617,7 @@ function updateGeneratedScript() {
 
   scriptLines.push(`! =========================================================`);
   scriptLines.push(`! KỊCH BẢN CẤU HÌNH TỰ ĐỘNG CHO: ${vInfo.name.toUpperCase()}`);
-  scriptLines.push(`! Ngày sinh: ${now} | Thiết bị: NetCLI Workbench`);
+  scriptLines.push(`! Ngày sinh: ${now} | Thiết bị: TraceDeck`);
   scriptLines.push(`! Thông số: VLAN ${getBuilderParams()['{{VLAN_ID}}']} (${getBuilderParams()['{{VLAN_NAME}}']}) | Gateway: ${getBuilderParams()['{{IP_CIDR}}']}`);
   scriptLines.push(`! =========================================================\n`);
 
@@ -1830,7 +1835,7 @@ function initDiagnosticAssistant() {
       "get system performance status",
       "get system interface physical",
       "get router info routing-table all",
-      "diagnose log last 40"
+      "execute log display"
     ].join('\n'),
 
     huawei: [
@@ -1857,7 +1862,7 @@ function initDiagnosticAssistant() {
       "show version",
       "show ip interface brief",
       "show interface brief",
-      "show lldp info remote-device",
+      "show lldp neighbor-info",
       "show logging -r -n 40"
     ].join('\n'),
 
@@ -1881,6 +1886,17 @@ function initDiagnosticAssistant() {
       "show process cpu",
       "show logging",
       "terminal length 24"
+    ].join('\n'),
+
+    draytek: [
+      "sys version",
+      "sys health",
+      "show status",
+      "wan status",
+      "show lan",
+      "ip route",
+      "srv dhcp status",
+      "log"
     ].join('\n')
   };
 
@@ -2511,5 +2527,224 @@ function renderMtCineTroubleshoot() {
     `;
 
     container.appendChild(card);
+  });
+}
+
+
+// ==========================================
+// DARK / LIGHT THEME TOGGLE & CHECK FOR UPDATE
+// ==========================================
+function applyTheme(theme) {
+  const root = document.documentElement;
+  const sunIcon = document.getElementById('icon-theme-sun');
+  const moonIcon = document.getElementById('icon-theme-moon');
+
+  if (theme === 'light') {
+    root.classList.add('light-theme');
+    root.classList.remove('dark');
+    if (sunIcon) sunIcon.classList.add('hidden');
+    if (moonIcon) moonIcon.classList.remove('hidden');
+  } else {
+    root.classList.remove('light-theme');
+    root.classList.add('dark');
+    if (sunIcon) sunIcon.classList.remove('hidden');
+    if (moonIcon) moonIcon.classList.add('hidden');
+  }
+  try {
+    localStorage.setItem('tracedeck_theme', theme);
+  } catch (e) {}
+}
+
+function initThemeAndUpdate() {
+  let savedTheme = 'dark';
+  try {
+    savedTheme = localStorage.getItem('tracedeck_theme') || 'dark';
+  } catch (e) {}
+  applyTheme(savedTheme);
+
+  document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
+    const isLight = document.documentElement.classList.contains('light-theme');
+    const nextTheme = isLight ? 'dark' : 'light';
+    applyTheme(nextTheme);
+    showToast(nextTheme === 'light' ? '☀️ Đã chuyển sang Giao diện Sáng (Light Mode)' : '🌙 Đã chuyển sang Giao diện Tối (Dark Mode)');
+  });
+
+  // Check for Update handler
+  document.getElementById('btn-check-update')?.addEventListener('click', async () => {
+    const box = document.getElementById('update-status-box');
+    if (box) {
+      box.innerHTML = '<span class="text-cyan-400">⏳ Đang kiểm tra phiên bản mới nhất...</span>';
+    }
+    const res = await safeFetchJson('/api/system/check-update', {
+      currentVersion: '2.6.0',
+      latestVersion: '2.6.0',
+      hasUpdate: false,
+      buildDate: '2026-11-12',
+      updateCommand: 'cd /var/www/netcli && git pull && pm2 restart netcli',
+      changelog: ['v2.6.0: TraceDeck Raycast UI, Dynamic Island Navbar, Dark/Light Toggle & Bản quyền KhangIT.']
+    });
+    const info = res.data;
+    if (box) {
+      const statusBadge = info.hasUpdate
+        ? `<span class="text-amber-400 font-bold">🔔 Đã có bản mới v${escapeHtml(info.latestVersion)}!</span>`
+        : `<span class="text-emerald-400 font-bold">✓ Bạn đang dùng phiên bản mới nhất (v${escapeHtml(info.currentVersion)})</span>`;
+      const logsHtml = (info.changelog || []).map(c => `<li class="text-[11px] text-slate-300">• ${escapeHtml(c)}</li>`).join('');
+      box.innerHTML = `
+        <div class="space-y-2">
+          <div>${statusBadge} <span class="text-slate-500 text-[10px]">(Build: ${escapeHtml(info.buildDate)})</span></div>
+          <ul class="space-y-1 pt-1">${logsHtml}</ul>
+          <div class="pt-2 border-t border-slate-800">
+            <div class="text-[10px] text-slate-400 mb-1">Lệnh cập nhật nhanh trên Ubuntu Server:</div>
+            <div class="flex items-center justify-between gap-2 bg-slate-950 px-2.5 py-1.5 rounded border border-slate-800">
+              <code class="font-mono text-[11px] text-emerald-400 select-all">${escapeHtml(info.updateCommand)}</code>
+              <button type="button" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-white" onclick="copyText('${escapeAttr(info.updateCommand)}', this)">Copy</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    showToast('Đã kiểm tra phiên bản hệ thống!');
+  });
+}
+
+// ==========================================
+// RAYCAST COMMAND PALETTE CONTROLLER (⌘K / Ctrl+K)
+// ==========================================
+function initRaycastPalette() {
+  const modal = document.getElementById('modal-raycast-cmdk');
+  const input = document.getElementById('raycast-cmdk-input');
+  const resultsBox = document.getElementById('raycast-cmdk-results');
+  const triggerBtn = document.getElementById('btn-raycast-cmdk');
+  if (!modal || !input || !resultsBox) return;
+
+  let selectedIndex = 0;
+  let currentItems = [];
+
+  const BASE_COMMANDS = [
+    { type: 'View', icon: '📘', title: 'Cẩm Nang Cấu Hình Đa Hãng (10 Hãng)', sub: 'VIEW-01 • Tra cứu & lọc tác vụ Cisco, CBS, Juniper, FortiGate, Huawei, DrayTek...', action: () => document.getElementById('nav-btn-generator')?.click() },
+    { type: 'View', icon: '⚡', title: 'Sinh Lệnh Nhanh & Giả Lập Console', sub: 'VIEW-02 • Checklist chọn tính năng và chạy thử Sandbox', action: () => document.getElementById('nav-btn-builder')?.click() },
+    { type: 'View', icon: '🩺', title: 'Chẩn Đoán Sự Cố & AI Optimizer', sub: 'VIEW-04 • Scan log qua SSH/Telnet và xuất lệnh sửa lỗi', action: () => document.getElementById('nav-btn-diagnose')?.click() },
+    { type: 'View', icon: '🛰️', title: 'MikroTik RouterOS Chuyên Sâu (v7/v6)', sub: 'VIEW-05 • Recursive Failover, PCC Multi-WAN, BGP v7, MPLS', action: () => document.getElementById('nav-btn-mikrotik')?.click() },
+    { type: 'View', icon: '👁️', title: 'Bách Khoa Lệnh Show & Kiểm Tra', sub: 'VIEW-03 • 37+ lệnh show/display và mẹo đọc output', action: () => document.getElementById('nav-btn-showcmds')?.click() },
+    { type: 'View', icon: '🧮', title: 'Máy Tính Subnet / Wildcard Mask', sub: 'VIEW-06 • Tính nhanh Network ID, Broadcast, OSPF Wildcard', action: () => document.getElementById('nav-btn-subnet')?.click() },
+    { type: 'Tool', icon: '🔌', title: 'Thông Số Console Serial & Baudrate', sub: 'VIEW-07 • 9600 vs 115200 bps, chân cáp, user mặc định', action: () => document.getElementById('nav-btn-console')?.click() },
+    { type: 'Tool', icon: '💡', title: 'Cáp Quang & Mở Khóa SFP Bên Thứ 3', sub: 'VIEW-08 • Ngưỡng công suất thu Rx dBm & Unlock OEM SFP', action: () => document.getElementById('nav-btn-fiber')?.click() },
+    { type: 'Tool', icon: '📋', title: 'Danh Bạ Port Mạng (TCP/UDP)', sub: 'VIEW-09 • 22+ cổng dịch vụ phổ biến cho ACL & Firewall', action: () => document.getElementById('nav-btn-ports')?.click() },
+    { type: 'Tool', icon: '🔑', title: 'Sổ Tay Phá Mật Khẩu (Password Recovery)', sub: 'VIEW-10 • Hướng dẫn từng bước cho người mới nhận bàn giao', action: () => document.getElementById('nav-btn-recovery')?.click() },
+    { type: 'Info', icon: '👤', title: 'Giới Thiệu KhangIT & Check for Update', sub: 'VIEW-12 • Bản quyền, câu chuyện ra đời & kiểm tra cập nhật', action: () => document.getElementById('nav-btn-about')?.click() },
+    { type: 'Admin', icon: '🔒', title: 'Trang Quản Trị Hệ Thống (Admin Portal)', sub: 'VIEW-11 • RAM/CPU Monitor, CRUD & Golden Backup', action: () => document.getElementById('nav-btn-admin')?.click() },
+    { type: 'Action', icon: '📊', title: 'Mở Bảng Đối Chiếu Cú Pháp (Rosetta Stone)', sub: 'So sánh lệnh tương đương giữa các hãng', action: () => document.getElementById('btn-rosetta')?.click() },
+    { type: 'Theme', icon: '☀️', title: 'Chuyển Giao Diện Sáng (Light Mode)', sub: 'Bật giao diện sáng Raycast Frosted Light', action: () => { applyTheme('light'); showToast('☀️ Đã bật Giao diện Sáng'); } },
+    { type: 'Theme', icon: '🌙', title: 'Chuyển Giao Diện Tối (Dark Mode)', sub: 'Bật giao diện tối Raycast Obsidian', action: () => { applyTheme('dark'); showToast('🌙 Đã bật Giao diện Tối'); } }
+  ];
+
+  function openPalette() {
+    modal.classList.remove('hidden');
+    input.value = '';
+    selectedIndex = 0;
+    renderPaletteItems('');
+    setTimeout(() => input.focus(), 40);
+  }
+
+  function closePalette() {
+    modal.classList.add('hidden');
+  }
+
+  function renderPaletteItems(query) {
+    const q = query.toLowerCase().trim();
+    const taskItems = (CORE_TASKS || []).slice(0, 15).map(t => ({
+      type: 'CLI',
+      icon: '⌨️',
+      title: t.title,
+      sub: t.desc,
+      action: () => {
+        document.getElementById('nav-btn-generator')?.click();
+        const searchInp = document.getElementById('search-input');
+        if (searchInp) {
+          searchInp.value = t.title.split(' ')[0];
+          searchQuery = searchInp.value.toLowerCase();
+          renderCards();
+        }
+      }
+    }));
+
+    const all = [...BASE_COMMANDS, ...taskItems];
+    currentItems = q ? all.filter(it => it.title.toLowerCase().includes(q) || it.sub.toLowerCase().includes(q) || it.type.toLowerCase().includes(q)) : BASE_COMMANDS;
+    if (selectedIndex >= currentItems.length) selectedIndex = 0;
+
+    if (currentItems.length === 0) {
+      resultsBox.innerHTML = '<div class="py-8 text-center text-zinc-500 text-xs">Không tìm thấy lệnh hoặc phân hệ phù hợp...</div>';
+      return;
+    }
+
+    resultsBox.innerHTML = currentItems.map((it, idx) => {
+      const activeCls = idx === selectedIndex ? 'bg-rose-500/20 border-rose-500/40 text-white' : 'border-transparent text-zinc-300 hover:bg-white/5';
+      return `
+        <button type="button" class="cmdk-item w-full text-left px-3 py-2.5 rounded-xl border ${activeCls} flex items-center justify-between gap-3 transition" data-idx="${idx}">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-sm">${it.icon}</span>
+            <div class="min-w-0">
+              <div class="font-semibold text-xs text-white truncate">${escapeHtml(it.title)}</div>
+              <div class="text-[11px] text-zinc-400 truncate">${escapeHtml(it.sub)}</div>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-zinc-400 border border-white/10 shrink-0">${escapeHtml(it.type)}</span>
+        </button>
+      `;
+    }).join('');
+
+    resultsBox.querySelectorAll('.cmdk-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        if (currentItems[idx]) {
+          closePalette();
+          currentItems[idx].action();
+        }
+      });
+    });
+  }
+
+  triggerBtn?.addEventListener('click', openPalette);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closePalette();
+  });
+
+  input.addEventListener('input', (e) => {
+    selectedIndex = 0;
+    renderPaletteItems(e.target.value);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (currentItems.length) {
+        selectedIndex = (selectedIndex + 1) % currentItems.length;
+        renderPaletteItems(input.value);
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (currentItems.length) {
+        selectedIndex = (selectedIndex - 1 + currentItems.length) % currentItems.length;
+        renderPaletteItems(input.value);
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentItems[selectedIndex]) {
+        closePalette();
+        currentItems[selectedIndex].action();
+      }
+    } else if (e.key === 'Escape') {
+      closePalette();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      if (modal.classList.contains('hidden')) openPalette();
+      else closePalette();
+    } else if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+      closePalette();
+    }
   });
 }

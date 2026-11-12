@@ -22,7 +22,7 @@ router.get('/health', (req, res) => {
     status: 'online',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    service: 'NetCLI Enterprise Workbench API'
+    service: 'TraceDeck API'
   });
 });
 
@@ -569,6 +569,57 @@ router.post('/diagnose/audit-scan', (req, res) => {
     issues: issues,
     optimizerScript: optLines.join('\n')
   });
+});
+
+
+// ==========================================
+// SYSTEM VERSION & CHECK FOR UPDATE APIS
+// ==========================================
+const APP_VERSION = '2.6.0';
+const APP_BUILD_DATE = '2026-11-12';
+
+router.get('/system/version', (req, res) => {
+  res.json({
+    name: 'TraceDeck',
+    version: APP_VERSION,
+    buildDate: APP_BUILD_DATE,
+    author: 'KhangIT',
+    email: 'duonganhkhang95@gmail.com',
+    tiktok: '@khangdd72'
+  });
+});
+
+router.get('/system/check-update', async (req, res) => {
+  const githubRepo = process.env.GITHUB_REPO || ''; // e.g. "khangit/netcli-workbench"
+  const result = {
+    currentVersion: APP_VERSION,
+    latestVersion: APP_VERSION,
+    hasUpdate: false,
+    buildDate: APP_BUILD_DATE,
+    checkedAt: new Date().toISOString(),
+    updateCommand: 'cd /var/www/netcli && git pull && pm2 restart netcli',
+    changelog: [
+      'v2.6.0: Bản quyền KhangIT, Đa ngôn ngữ (VI / EN / ZH), Trang Giới Thiệu & Check for Update.',
+      'v2.5.0: Rà soát chuẩn CLI 10 hãng từ tài liệu chính thức + Bổ sung DrayTek VigorOS.',
+      'v2.4.0: Trạm chẩn đoán sự cố AI (SSH/Telnet) + Nút Optimizer + Lệnh One-Shot đa hãng.'
+    ]
+  };
+
+  if (githubRepo && typeof fetch === 'function') {
+    try {
+      const resp = await fetch(`https://raw.githubusercontent.com/${githubRepo}/main/package.json`);
+      if (resp.ok) {
+        const remotePkg = await resp.json();
+        if (remotePkg.version && remotePkg.version !== APP_VERSION) {
+          result.latestVersion = remotePkg.version;
+          result.hasUpdate = true;
+        }
+      }
+    } catch (e) {
+      result.note = 'Đang kiểm tra ở chế độ offline/nội bộ.';
+    }
+  }
+  res.json(result);
 });
 
 module.exports = router;

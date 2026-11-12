@@ -36,7 +36,7 @@ app.get('*', (req, res) => {
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('====================================================');
-  console.log(`🚀 NetCLI Enterprise Workbench is running!`);
+  console.log(`🚀 TraceDeck is running!`);
   console.log(`📡 Access URL: http://0.0.0.0:${PORT}`);
   console.log(`⚡ Environment: Node.js ${process.version}`);
   console.log('====================================================');

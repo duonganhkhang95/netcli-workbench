@@ -34,5 +34,9 @@
   "edgecore": {
     "name": "Edgecore Networks (ECS)",
     "color": "border-teal-500/30 text-teal-400 bg-teal-500/10"
+  },
+  "draytek": {
+    "name": "DrayTek VigorOS (Vigor2927/2962/3910)",
+    "color": "border-orange-500/30 text-orange-400 bg-orange-500/10"
   }
 }

@@ -1,7 +1,7 @@
 {
-  "name": "netcli-enterprise-workbench",
-  "version": "2.0.0",
-  "description": "Multi-Vendor Network Engineering Workbench & Command Generator Suite",
+  "name": "tracedeck-workbench",
+  "version": "2.6.0",
+  "description": "TraceDeck - Multi-Vendor Network Engineering & Diagnostics Workbench by KhangIT",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -18,7 +18,7 @@
     "ruijie",
     "edgecore"
   ],
-  "author": "IT Network Engineer",
+  "author": "KhangIT <duonganhkhang95@gmail.com> (TikTok: @khangdd72)",
   "license": "MIT",
   "dependencies": {
     "express": "^4.19.2"
