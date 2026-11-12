@@ -2236,3 +2236,258 @@ function renderAuditReport(data) {
 
   box.scrollIntoView({ behavior: 'smooth' });
 }
+
+
+// ==========================================
+// MIKROTIK ROUTEROS SUITE CLIENT LOGIC
+// ==========================================
+let MTCINE_DATA = { modules: [], troubleshoot: [] };
+let activeMtModuleId = 'pppoe-multiwan';
+let pppoeWanCount = 1;
+
+async function initMikroTikSuite() {
+  try {
+    const res = await safeFetchJson('/api/mikrotik/mtcine', { modules: [], troubleshoot: [] });
+    if (res.ok && res.data) {
+      MTCINE_DATA = res.data;
+    }
+  } catch (err) {
+    console.warn('Cannot fetch MikroTik API:', err);
+  }
+
+  if (MTCINE_DATA.modules && MTCINE_DATA.modules.length > 0 && !MTCINE_DATA.modules.some(m => m.id === activeMtModuleId)) {
+    activeMtModuleId = MTCINE_DATA.modules[0].id;
+  }
+
+  renderMtCineModules();
+  renderMtCineTroubleshoot();
+  updateMtCineScript();
+
+  // PPPoE Dynamic WAN Adder
+  document.getElementById('btn-add-pppoe-wan')?.addEventListener('click', () => {
+    const container = document.getElementById('mt-pppoe-wan-container');
+    if (!container) return;
+
+    pppoeWanCount++;
+    const row = document.createElement('div');
+    row.className = 'pppoe-wan-row grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-slate-950 p-2.5 rounded-lg border border-slate-800 animate-fade-in-up';
+    row.setAttribute('data-wan-idx', pppoeWanCount);
+
+    row.innerHTML = `
+      <div class="sm:col-span-2">
+        <span class="font-bold text-sky-400 text-xs flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+          <span>WAN ${pppoeWanCount} (PPPoE)</span>
+        </span>
+      </div>
+      <div class="sm:col-span-3">
+        <input type="text" placeholder="PPPoE Username" value="wan${pppoeWanCount}_user" class="pppoe-user w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-sky-300 focus:outline-none focus:border-sky-500">
+      </div>
+      <div class="sm:col-span-3">
+        <input type="text" placeholder="PPPoE Password" value="Pass@${pppoeWanCount}" class="pppoe-pass w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-sky-300 focus:outline-none focus:border-sky-500">
+      </div>
+      <div class="sm:col-span-3">
+        <input type="text" placeholder="Interface" value="ether${pppoeWanCount}" class="pppoe-intf w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-sky-500">
+      </div>
+      <div class="sm:col-span-1 text-center">
+        <button type="button" class="btn-remove-wan text-xs text-rose-400 hover:text-rose-300 p-1 rounded hover:bg-rose-500/10 transition" title="Xóa đường WAN này">✕</button>
+      </div>
+    `;
+
+    row.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', () => updateMtCineScript());
+    });
+
+    row.querySelector('.btn-remove-wan')?.addEventListener('click', () => {
+      row.remove();
+      updateMtCineScript();
+      showToast('Đã xóa đường WAN');
+    });
+
+    container.appendChild(row);
+    updateMtCineScript();
+    showToast(`Đã thêm WAN ${pppoeWanCount}!`);
+  });
+
+  // Attach input listener to default WAN 1 row
+  document.querySelectorAll('.pppoe-wan-row input').forEach(inp => {
+    inp.addEventListener('input', () => updateMtCineScript());
+  });
+
+  // Parameter inputs change listener
+  const mtInputIds = ['mt-sfp-port', 'mt-dns-servers', 'mt-dhcp-pool', 'mt-lan-subnet', 'mt-lan-ip', 'mt-total-dl', 'mt-total-ul', 'mt-custom-params'];
+  mtInputIds.forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => {
+      updateMtCineScript();
+    });
+  });
+
+  // Copy button
+  document.getElementById('btn-copy-all-mtcine')?.addEventListener('click', () => {
+    const text = document.getElementById('mtcine-rsc-output')?.textContent || '';
+    copyText(text, document.getElementById('btn-copy-all-mtcine'));
+  });
+
+  // Download .rsc button
+  document.getElementById('btn-download-mtcine-rsc')?.addEventListener('click', () => {
+    const text = document.getElementById('mtcine-rsc-output')?.textContent || '';
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `mikrotik_${activeMtModuleId}_${Date.now()}.rsc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('Đã tải xuống file cấu hình MikroTik .rsc!');
+  });
+}
+
+function getPppoeWanData() {
+  const rows = document.querySelectorAll('.pppoe-wan-row');
+  const wans = [];
+  rows.forEach((row, idx) => {
+    const user = row.querySelector('.pppoe-user')?.value || `user_wan${idx+1}`;
+    const pass = row.querySelector('.pppoe-pass')?.value || `Pass@${idx+1}`;
+    const intf = row.querySelector('.pppoe-intf')?.value || `ether${idx+1}`;
+    wans.push({ idx: idx + 1, user, pass, intf, name: `pppoe-out${idx+1}` });
+  });
+  if (wans.length === 0) {
+    wans.push({ idx: 1, user: 'viettel_wan1', pass: 'Pass@123', intf: 'ether1', name: 'pppoe-out1' });
+  }
+  return wans;
+}
+
+function generatePppoeScripts() {
+  const wans = getPppoeWanData();
+  let dialerLines = ['/interface pppoe-client'];
+  let natLines = ['/ip firewall nat'];
+
+  wans.forEach((w, i) => {
+    dialerLines.push(`add name="${w.name}" interface=${w.intf} user="${w.user}" password="${w.pass}" add-default-route=yes default-route-distance=${i+1} disabled=no comment="PPPoE WAN ${w.idx}"`);
+    natLines.push(`add chain=srcnat out-interface="${w.name}" action=masquerade comment="NAT Masquerade ${w.name}"`);
+  });
+
+  return {
+    dialer: dialerLines.join('\n'),
+    nat: natLines.join('\n')
+  };
+}
+
+function getMtParams() {
+  const pppoe = generatePppoeScripts();
+  const sfpPort = document.getElementById('mt-sfp-port')?.value || 'sfp-sfpplus1';
+  const dnsServers = document.getElementById('mt-dns-servers')?.value || '8.8.8.8, 1.1.1.1';
+  const dhcpPool = document.getElementById('mt-dhcp-pool')?.value || '192.168.88.10-192.168.88.200';
+  const lanSubnet = document.getElementById('mt-lan-subnet')?.value || '192.168.88.0';
+  const lanIp = document.getElementById('mt-lan-ip')?.value || '192.168.88.1';
+  const totalDl = document.getElementById('mt-total-dl')?.value || '150';
+  const totalUl = document.getElementById('mt-total-ul')?.value || '80';
+
+  const params = {
+    '{{SFP_PORT}}': sfpPort,
+    '{{DNS_SERVERS}}': dnsServers,
+    '{{DHCP_POOL}}': dhcpPool,
+    '{{LAN_SUBNET}}': lanSubnet,
+    '{{LAN_IP}}': lanIp,
+    '{{TOTAL_DL_MBPS}}': totalDl,
+    '{{TOTAL_UL_MBPS}}': totalUl,
+    '{{WAN1_GW}}': '192.168.1.1',
+    '{{WAN2_GW}}': '192.168.2.1',
+    '{{LOCAL_ASN}}': '65000',
+    '{{REMOTE_WG_PUBKEY}}': 'xX3aB+9cDeFgHiJkLmNoPqRsTuVwXyZ1234567890=',
+    '{{REMOTE_WAN_IP}}': '203.0.113.50',
+    '{{PPPOE_WAN_SCRIPTS}}': pppoe.dialer,
+    '{{PPPOE_NAT_SCRIPTS}}': pppoe.nat
+  };
+
+  const customRaw = document.getElementById('mt-custom-params')?.value || '';
+  customRaw.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed && trimmed.includes('=')) {
+      const eqIdx = trimmed.indexOf('=');
+      const k = trimmed.substring(0, eqIdx).trim();
+      const v = trimmed.substring(eqIdx + 1).trim();
+      if (k) params[`{{${k}}}`] = v;
+    }
+  });
+
+  return params;
+}
+
+function replaceMtParams(str) {
+  const params = getMtParams();
+  let res = str;
+  for (const [k, v] of Object.entries(params)) {
+    res = res.split(k).join(v);
+  }
+  return res;
+}
+
+function renderMtCineModules() {
+  const container = document.getElementById('mtcine-modules-list');
+  if (!container || !MTCINE_DATA.modules) return;
+  container.innerHTML = '';
+
+  MTCINE_DATA.modules.forEach(mod => {
+    const isSelected = mod.id === activeMtModuleId;
+    const btn = document.createElement('button');
+    btn.className = `w-full text-left p-3 rounded-xl border transition flex flex-col gap-1 ${isSelected ? 'bg-sky-950/60 border-sky-500/70 text-white shadow-md' : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'}`;
+
+    btn.innerHTML = `
+      <div class="flex items-center justify-between">
+        <span class="font-bold text-xs ${isSelected ? 'text-sky-300' : 'text-white'}">${escapeHtml(mod.name)}</span>
+        <span class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${isSelected ? 'bg-sky-500/20 text-sky-300' : 'bg-slate-800 text-slate-400'}">${escapeHtml(mod.category)}</span>
+      </div>
+      <p class="text-[11px] text-slate-400 leading-snug line-clamp-2">${escapeHtml(mod.desc)}</p>
+    `;
+
+    btn.addEventListener('click', () => {
+      activeMtModuleId = mod.id;
+      renderMtCineModules();
+      updateMtCineScript();
+    });
+
+    container.appendChild(btn);
+  });
+}
+
+function updateMtCineScript() {
+  const mod = MTCINE_DATA.modules?.find(m => m.id === activeMtModuleId);
+  if (!mod) return;
+
+  const titleEl = document.getElementById('mtcine-script-title');
+  const descEl = document.getElementById('mtcine-script-desc');
+  const outputEl = document.getElementById('mtcine-rsc-output');
+
+  if (titleEl) titleEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-400"></span><span>${escapeHtml(mod.name)}</span>`;
+  if (descEl) descEl.textContent = mod.desc;
+  if (outputEl) {
+    outputEl.textContent = replaceMtParams(mod.rsc);
+  }
+}
+
+function renderMtCineTroubleshoot() {
+  const container = document.getElementById('mtcine-ts-list');
+  if (!container || !MTCINE_DATA.troubleshoot) return;
+  container.innerHTML = '';
+
+  MTCINE_DATA.troubleshoot.forEach(ts => {
+    const card = document.createElement('div');
+    card.className = 'bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs space-y-1.5 hover:border-slate-700 transition';
+
+    card.innerHTML = `
+      <div class="font-bold text-rose-400 flex items-center gap-1.5">
+        <span>⚠</span>
+        <span>${escapeHtml(ts.problem)}</span>
+      </div>
+      <div class="text-[11px] text-cyan-300 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800 select-all">
+        Lệnh kiểm tra: ${escapeHtml(ts.diagnostic)}
+      </div>
+      <div class="text-[11px] text-slate-300 leading-relaxed font-sans pt-1">
+        💡 <strong>Giải pháp:</strong> ${escapeHtml(ts.solution)}
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
