@@ -1742,10 +1742,14 @@ function initDiagnosticAssistant() {
     ciscocbs: [
       "terminal datadump",
       "show system",
+      "show version",
       "show ip interface",
       "show interfaces status",
+      "show interfaces switchport",
       "show spanning-tree",
-      "show logging"
+      "show cpu utilization",
+      "show logging",
+      "terminal no datadump"
     ].join('\n'),
 
     juniper: [
@@ -1811,9 +1815,13 @@ function initDiagnosticAssistant() {
     edgecore: [
       "terminal length 0",
       "show system",
+      "show version",
       "show ip interface",
       "show interfaces status",
-      "show logging"
+      "show spanning-tree",
+      "show process cpu",
+      "show logging",
+      "terminal length 24"
     ].join('\n')
   };
 

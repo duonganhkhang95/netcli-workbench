@@ -444,11 +444,14 @@
       "ciscocbs": {
         "cmds": [
           "configure",
-          "vlan {{VLAN_ID}}",
+          "vlan database",
+          " vlan {{VLAN_ID}}",
+          "exit",
+          "interface vlan {{VLAN_ID}}",
           " name {{VLAN_NAME}}",
           "exit"
         ],
-        "note": "Dòng CBS hỗ trợ cả vlan database và vlan trực tiếp."
+        "note": "Chuẩn Cisco CBS 250/350: tạo VLAN ID trong mode 'vlan database', sau đó đặt tên tại 'interface vlan <id>'."
       },
       "juniper": {
         "cmds": [
@@ -2546,7 +2549,7 @@
       },
       "edgecore": {
         "cmds": [
-          "show interfaces ethernet {{ACCESS_PORT}} counters"
+          "show interfaces counters ethernet {{ACCESS_PORT}}"
         ],
         "note": "Kiểm tra bộ đếm lỗi phần cứng cổng."
       }
@@ -2634,7 +2637,8 @@
       },
       "edgecore": {
         "cmds": [
-          "show interfaces ethernet {{ACCESS_PORT}} status",
+          "show interfaces status ethernet {{ACCESS_PORT}}",
+          "configure",
           "interface ethernet {{ACCESS_PORT}}",
           " shutdown",
           " no shutdown",
@@ -2734,7 +2738,7 @@
       },
       "ciscocbs": {
         "cmds": [
-          "ping {{NEXTHOP}} source-interface vlan {{VLAN_ID}} size 1472 count 5",
+          "ping {{NEXTHOP}} size 1472 count 5",
           "traceroute {{NEXTHOP}}"
         ],
         "note": "Kiểm tra độ trễ và mất gói từ interface nội bộ."
@@ -2786,7 +2790,7 @@
       },
       "edgecore": {
         "cmds": [
-          "ping {{NEXTHOP}} size 1472 df",
+          "ping {{NEXTHOP}}",
           "traceroute {{NEXTHOP}}"
         ],
         "note": "Kiểm tra đường truyền MTU từ console."
@@ -2810,7 +2814,7 @@
       "ciscocbs": {
         "cmds": [
           "show cpu utilization",
-          "show memory"
+          "show system resources"
         ],
         "note": "Hiển thị tỷ lệ CPU 5 giây, 1 phút và 5 phút."
       },
@@ -2860,7 +2864,8 @@
       },
       "edgecore": {
         "cmds": [
-          "show cpu-utilization",
+          "show process cpu",
+          "show process cpu task",
           "show memory"
         ],
         "note": "Kiểm tra mức tải CPU hệ thống."

@@ -65,13 +65,13 @@
     "title": "Xem Các Cổng Đang Chạy Trunk & VLAN Được Phép (Trunk Allowed)",
     "desc": "Kiểm tra cổng nào đang thực sự chạy chế độ trung kế Trunk và các VLAN nào đang được Forwarding qua trunk",
     "cisco": "show interfaces trunk",
-    "ciscocbs": "show interfaces trunk",
+    "ciscocbs": "show interfaces switchport",
     "juniper": "show interfaces ethernet-switching",
     "fortinet": "diagnose switch physical-ports summary",
     "huawei": "display port vlan",
     "mikrotik": "/interface bridge vlan print",
     "ruijie": "show interfaces trunk",
-    "edgecore": "show interfaces switchport trunk",
+    "edgecore": "show interfaces switchport",
     "tip": "Phần \"Vlans in spanning tree forwarding state and not pruned\" cho biết chính xác VLAN nào đang thông qua trunk."
   },
   {
@@ -131,7 +131,7 @@
     "huawei": "display eth-trunk {{LAG_ID}}",
     "mikrotik": "/interface bonding print",
     "ruijie": "show aggregatePort {{LAG_ID}} summary",
-    "edgecore": "show interfaces port-channel {{LAG_ID}}",
+    "edgecore": "show interfaces status port-channel",
     "tip": "Cờ \"P\" (in port-channel) = chạy chuẩn. Cờ \"D\" (down) hoặc \"s\" (suspended) = lệch cấu hình tốc độ/VLAN 2 đầu."
   },
   {
@@ -185,13 +185,13 @@
     "title": "Xem Cấu Hình Bảo Mật Khóa MAC Cổng (Port Security)",
     "desc": "Kiểm tra số lượng MAC tối đa cho phép trên cổng, MAC Sticky đã học và trạng thái vi phạm (Violation)",
     "cisco": "show port-security interface {{ACCESS_PORT}}",
-    "ciscocbs": "show port-security {{ACCESS_PORT}}",
+    "ciscocbs": "show ports security",
     "juniper": "show ethernet-switching table interface {{ACCESS_PORT}}",
     "fortinet": "diagnose switch physical-ports list-learning-limit",
     "huawei": "display mac-security",
     "mikrotik": "/interface bridge port print",
     "ruijie": "show port-security interface {{ACCESS_PORT}}",
-    "edgecore": "show port-security ethernet {{ACCESS_PORT}}",
+    "edgecore": "show port security",
     "tip": "Nếu Violation Count > 0 thì cổng có thể đã bị shutdown do ai đó cắm switch phụ hoặc thiết bị lạ."
   },
   {
@@ -230,7 +230,7 @@
     "title": "Xem Bảng Phân Giải Địa Chỉ ARP (IP to MAC Cache)",
     "desc": "Tra cứu địa chỉ IP này ứng với card mạng MAC nào của máy con, đang học qua cổng nào",
     "cisco": "show ip arp",
-    "ciscocbs": "show ip arp",
+    "ciscocbs": "show arp",
     "juniper": "show arp",
     "fortinet": "diagnose ip arp list",
     "huawei": "display arp all",
@@ -365,7 +365,7 @@
     "title": "Xem Danh Sách ACL & Đếm Số Lần Khớp Gói Tin (Hit Counters)",
     "desc": "Kiểm tra xem luật chặn firewall / ACL có thực sự phát huy tác dụng không qua bộ đếm số gói tin (matches)",
     "cisco": "show access-lists",
-    "ciscocbs": "show ip access-lists",
+    "ciscocbs": "show access-lists",
     "juniper": "show firewall filter BLOCK_ACCESS",
     "fortinet": "diagnose firewall policy hitcount show",
     "huawei": "display acl all",
@@ -410,13 +410,13 @@
     "title": "Xem Nhiệt Độ, Nguồn Điện & Quạt Tản Nhiệt (Environment Health)",
     "desc": "Kiểm tra nhiệt độ cảm biến (°C), quạt tản nhiệt quay bình thường hay hỏng, nguồn phụ (PSU2) có bị mất điện không",
     "cisco": "show environment all",
-    "ciscocbs": "show system environment",
+    "ciscocbs": "show system",
     "juniper": "show chassis environment",
     "fortinet": "diagnose hardware sysinfo sensor",
     "huawei": "display environment",
     "mikrotik": "/system health print",
     "ruijie": "show environment",
-    "edgecore": "show system environment",
+    "edgecore": "show system",
     "tip": "Đặc biệt quan trọng trong phòng server: cảnh báo sớm nguy cơ thiết bị tự sập nguồn do quá nhiệt (Thermal Overheat)."
   },
   {
@@ -431,7 +431,7 @@
     "huawei": "display poe power",
     "mikrotik": "/interface ethernet poe print",
     "ruijie": "show power inline",
-    "edgecore": "show poe inline-power",
+    "edgecore": "show poe powersupply",
     "tip": "Nếu Camera hoặc AP bị restart liên tục, kiểm tra xem tổng công suất Watt của Switch có bị chạm ngưỡng 100% Budget không."
   },
   {
@@ -476,7 +476,7 @@
     "huawei": "display cpu-usage",
     "mikrotik": "/tool profile",
     "ruijie": "show cpu",
-    "edgecore": "show cpu-utilization",
+    "edgecore": "show process cpu",
     "tip": "Nếu CPU duy trì > 85% trong 5 phút -> Cần kiểm tra ngay bão broadcast, loop mạng hoặc lỗi tiến trình dịch vụ."
   },
   {
@@ -506,7 +506,7 @@
     "huawei": "display clock && display ntp status",
     "mikrotik": "/system clock print",
     "ruijie": "show clock detail",
-    "edgecore": "show sntp status",
+    "edgecore": "show sntp",
     "tip": "Nếu giờ sai, toàn bộ log hệ thống sẽ bị sai lệch mốc thời gian, khiến việc điều tra sự cố gặp rất nhiều khó khăn."
   },
   {
@@ -530,13 +530,13 @@
     "title": "Xem File Khởi Động & File Cấu Hình Chỉ Định (Boot & Config Registry)",
     "desc": "Kiểm tra xem khi reboot thiết bị sẽ nạp file firmware .bin nào và có nạp đúng file startup-config không",
     "cisco": "show bootvar",
-    "ciscocbs": "show bootvar",
+    "ciscocbs": "show boot",
     "juniper": "show system storage",
     "fortinet": "get system auto-install",
     "huawei": "display startup",
     "mikrotik": "/system routerboard settings print",
     "ruijie": "show boot",
-    "edgecore": "show bootvar",
+    "edgecore": "show boot",
     "tip": "Luôn kiểm tra lệnh này sau khi nâng cấp firmware để đảm bảo thiết bị không bị rơi vào ROMMON khi khởi động lại!"
   },
   {
