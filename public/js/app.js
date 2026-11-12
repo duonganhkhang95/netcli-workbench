@@ -1725,11 +1725,118 @@ let currentOptimizerScript = '';
 
 function initDiagnosticAssistant() {
 
-  // One-shot collector copy
+  // Multi-Vendor One-Shot Collector Engine (Clean \n, No semicolons)
+  const ONESHOT_BY_VENDOR = {
+    cisco: [
+      "terminal length 0",
+      "show version",
+      "show ip interface brief",
+      "show interfaces status",
+      "show interfaces description",
+      "show spanning-tree summary",
+      "show processes cpu sorted | exclude 0.00%",
+      "show logging | last 50",
+      "terminal length 24"
+    ].join('\n'),
+
+    ciscocbs: [
+      "terminal datadump",
+      "show system",
+      "show ip interface",
+      "show interfaces status",
+      "show spanning-tree",
+      "show logging"
+    ].join('\n'),
+
+    juniper: [
+      "set cli screen-length 0",
+      "show version",
+      "show interfaces terse",
+      "show route",
+      "show system uptime",
+      "show chassis routing-engine",
+      "show log messages | last 40",
+      "set cli screen-length 24"
+    ].join('\n'),
+
+    fortinet: [
+      "config system console",
+      "set output standard",
+      "end",
+      "get system status",
+      "get system performance status",
+      "get system interface physical",
+      "get router info routing-table all",
+      "diagnose log last 40"
+    ].join('\n'),
+
+    huawei: [
+      "screen-length 0 temporary",
+      "display version",
+      "display ip interface brief",
+      "display interface brief",
+      "display ip routing-table",
+      "display cpu-usage",
+      "display logbuffer"
+    ].join('\n'),
+
+    mikrotik: [
+      "/system resource print",
+      "/ip address print",
+      "/interface print stats",
+      "/ip route print",
+      "/log print where topics~\"error|warning\"",
+      "/tool profile duration=5s"
+    ].join('\n'),
+
+    aruba: [
+      "no page",
+      "show version",
+      "show ip interface brief",
+      "show interface brief",
+      "show lldp info remote-device",
+      "show logging -r -n 40"
+    ].join('\n'),
+
+    ruijie: [
+      "terminal length 0",
+      "show version",
+      "show ip interface brief",
+      "show interfaces status",
+      "show cpu",
+      "show logging",
+      "terminal length 24"
+    ].join('\n'),
+
+    edgecore: [
+      "terminal length 0",
+      "show system",
+      "show ip interface",
+      "show interfaces status",
+      "show logging"
+    ].join('\n')
+  };
+
+  const oneshotVendorSelect = document.getElementById('diag-oneshot-vendor');
+  const oneshotPreview = document.getElementById('diag-oneshot-preview');
+
+  function updateOneshotPreview() {
+    const v = oneshotVendorSelect?.value || 'cisco';
+    const lines = (ONESHOT_BY_VENDOR[v] || ONESHOT_BY_VENDOR.cisco).split('\n');
+    if (oneshotPreview) {
+      oneshotPreview.textContent = lines.slice(0, 3).join('  ➔  ') + '  ... (' + lines.length + ' lệnh)';
+    }
+  }
+
+  oneshotVendorSelect?.addEventListener('change', updateOneshotPreview);
+  updateOneshotPreview();
+
   document.getElementById('btn-copy-collector-cmd')?.addEventListener('click', () => {
-    const oneShotCmd = 'terminal length 0 ; show version ; show ip int br ; show interfaces status ; show logging | last 40 ; show processes cpu sorted ; show spanning-tree summary';
-    copyText(oneShotCmd, document.getElementById('btn-copy-collector-cmd'));
-    showToast('Đã copy bộ lệnh quét 1 bước! Dán thẳng vào console của switch.');
+    const v = oneshotVendorSelect?.value || 'cisco';
+    const cmdStr = ONESHOT_BY_VENDOR[v] || ONESHOT_BY_VENDOR.cisco;
+    copyText(cmdStr, document.getElementById('btn-copy-collector-cmd'));
+    const vName = oneshotVendorSelect?.options[oneshotVendorSelect.selectedIndex]?.text || v;
+    showToast(`Đã copy bộ lệnh quét chuẩn ${vName}! Dán thẳng vào console.`);
   });
 
   // Mode toggles
