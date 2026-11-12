@@ -2,93 +2,133 @@
   {
     "vendor": "Cisco Catalyst (IOS / IOS-XE)",
     "icon": "border-emerald-500/30 text-emerald-400 bg-emerald-500/10",
+    "baud": "9600 bps (8-N-1)",
+    "keepConfig": "GIỮ NGUYÊN 100% CẤU HÌNH CŨ (Chỉ đổi mật khẩu mới)",
+    "downtime": "Khoảng 3 - 5 phút (Switch phải khởi động lại)",
     "steps": [
-      "1. Cắm dây Console (baud 9600), tắt nguồn thiết bị.",
-      "2. Vừa bật nguồn vừa giữ đè nút \"Mode\" trên mặt switch trong 15s cho đến khi vào màn hình \"switch:\".",
-      "3. Nhập lệnh: switch: flash_init",
-      "4. Đổi tên file cấu hình để bỏ qua mật khẩu: switch: rename flash:config.text flash:config.old",
-      "5. Khởi động lại: switch: boot",
-      "6. Thiết bị sẽ vào trắng cấu hình: gõ \"enable\", sau đó đổi lại tên file: copy flash:config.old flash:config.text rồi copy flash:config.text system:running-config",
-      "7. Đặt lại mật khẩu mới: configure terminal -> enable secret <Pass_Mới> -> write memory."
-    ]
+      "Bước 1 (Kết nối máy tính): Cắm dây Console xanh dương (RJ45) vào cổng Console sau lưng/mặt trước Switch. Mở PuTTY -> chọn Serial -> gõ cổng COM (xem trong Device Manager) -> Speed: 9600 -> bấm Open.",
+      "Bước 2 (Vào chế độ cứu hộ ROMMON): Rút dây nguồn Switch ra cho tắt hẳn. Một tay nhấn giữ nút 'MODE' (nút nhỏ ở mặt trước bên trái), tay kia cắm lại dây nguồn. Tiếp tục giữ nút MODE khoảng 15 giây cho đến khi màn hình PuTTY hiện chữ 'switch:' thì mới thả tay ra.",
+      "Bước 3 (Khởi tạo bộ nhớ Flash): Tại dòng 'switch:', gõ chính xác lệnh sau rồi nhấn Enter:\n  flash_init",
+      "Bước 4 (Tạm ẩn file cấu hình cũ để qua mặt mật khẩu): Gõ lệnh đổi tên file cấu hình (KHÔNG phải xóa, chỉ đổi tên tạm):\n  rename flash:config.text flash:config.old",
+      "Bước 5 (Khởi động lại Switch không mật khẩu): Gõ lệnh:\n  boot\n(Chờ 2-3 phút cho Switch khởi động xong. Nếu màn hình hỏi 'Would you like to enter the initial configuration dialog? [yes/no]:' -> gõ no rồi Enter).",
+      "Bước 6 (Nạp lại toàn bộ cấu hình cũ của công ty): Gõ lần lượt 3 lệnh sau:\n  enable\n  rename flash:config.old flash:config.text\n  copy flash:config.text system:running-config\n(Khi màn hình hỏi 'Destination filename [running-config]?' -> bấm Enter. Lúc này toàn bộ VLAN, IP cũ đã quay lại!).",
+      "Bước 7 (Đặt mật khẩu mới & Lưu lại): Gõ lần lượt:\n  configure terminal\n  enable secret MatKhauMoi@2026\n  username admin privilege 15 secret MatKhauMoi@2026\n  end\n  write memory"
+    ],
+    "warning": "TUYỆT ĐỐI KHÔNG gõ lệnh 'erase' hoặc 'format flash:' vì sẽ mất sạch cấu hình mạng của công ty!"
   },
   {
-    "vendor": "Cisco CBS (Business 250/350/550)",
+    "vendor": "Cisco CBS (Business 250 / 350 / 550)",
     "icon": "border-sky-500/30 text-sky-400 bg-sky-500/10",
+    "baud": "115200 bps (8-N-1) — Bắt buộc!",
+    "keepConfig": "GIỮ NGUYÊN 100% CẤU HÌNH CŨ",
+    "downtime": "Khoảng 2 - 4 phút",
     "steps": [
-      "1. Cắm dây Console với baudrate 115200 bps (Lưu ý: Không dùng 9600!).",
-      "2. Khởi động lại switch, khi màn hình đếm ngược \"Press Esc to enter Startup Menu\" -> Bấm phím \"Esc\" ngay lập tức.",
-      "3. Menu hiện ra 7 lựa chọn: Chọn số 3 (\"Password Recovery Procedure\").",
-      "4. Switch sẽ tự động khởi động và bỏ qua kiểm tra mật khẩu ở cấp độ console.",
-      "5. Đăng nhập không cần pass, vào configure -> username admin password <Pass_Mới> privilege 15 -> write memory."
-    ]
+      "Bước 1 (Kết nối PuTTY - Chú ý Baudrate): Cắm cáp Console. Mở PuTTY -> chọn Serial -> Speed BẮT BUỘC điền 115200 (nếu để 9600 màn hình sẽ đen xì không hiện chữ) -> bấm Open.",
+      "Bước 2 (Canh bấm phím Esc): Rút nguồn cắm lại Switch. Nhìn chằm chằm màn hình PuTTY, ngay khi thấy dòng chữ đếm ngược 'Press Esc to enter Startup Menu' -> bấm phím Esc liên tục.",
+      "Bước 3 (Chọn mục phá pass): Menu Startup hiện ra 7 dòng. Bạn bấm phím số 3 trên bàn phím (Password Recovery Procedure).",
+      "Bước 4 (Chờ vào thẳng Switch): Switch sẽ tự khởi động tiếp và tự động bỏ qua màn hình hỏi mật khẩu khi kết nối qua dây Console.",
+      "Bước 5 (Đổi lại mật khẩu mới & Lưu): Khi màn hình hiện dấu nhắc 'switch#', bạn gõ lần lượt:\n  configure\n  username cisco password MatKhauMoi@2026 privilege 15\n  exit\n  write memory\n(Bấm 'y' nếu máy hỏi xác nhận ghi đè)."
+    ],
+    "warning": "Nếu bấm Esc không kịp ở Bước 2, chỉ cần rút nguồn cắm lại và thử lại ngay."
   },
   {
     "vendor": "Juniper Networks (Junos OS)",
     "icon": "border-amber-500/30 text-amber-400 bg-amber-500/10",
+    "baud": "9600 bps (8-N-1)",
+    "keepConfig": "GIỮ NGUYÊN 100% CẤU HÌNH CŨ",
+    "downtime": "Khoảng 4 - 6 phút",
     "steps": [
-      "1. Cắm dây Console (baud 9600), reboot thiết bị.",
-      "2. Khi màn hình hiện thông báo loader, bấm phím \"Space\" (phím cách) liên tục để vào dấu nhắc \"loader>\".",
-      "3. Gõ lệnh: loader> boot -s (khởi động vào Single-User Mode).",
-      "4. Khi hệ thống dừng ở prompt sh: gõ lệnh recovery.",
-      "5. Màn hình tự động đưa bạn vào cấu hình CLI: root> configure",
-      "6. Đặt lại mật khẩu root: set system root-authentication plain-text-password -> nhập mật khẩu mới.",
-      "7. Gõ lệnh: commit -> exit -> request system reboot."
-    ]
+      "Bước 1 (Kết nối PuTTY): Cắm cáp Console vào cổng CON. Mở PuTTY -> Serial -> Speed: 9600 -> Open.",
+      "Bước 2 (Vào Loader): Rút nguồn cắm lại thiết bị. Quan sát màn hình khi thấy dòng 'Hit [Enter] to boot immediately, or space bar for command prompt.' -> bấm ngay phím Space (phím cách) để vào dấu nhắc 'loader>'.",
+      "Bước 3 (Vào chế độ Single-User): Tại 'loader>', gõ lệnh:\n  boot -s\n(Chờ khoảng 1-2 phút cho hệ điều hành nạp xong).",
+      "Bước 4 (Gọi trình cứu hộ): Màn hình sẽ dừng lại ở câu hỏi 'Enter full pathname of shell or 'recovery' for root password recovery'. Bạn gõ chữ:\n  recovery\nrồi nhấn Enter.",
+      "Bước 5 (Đặt lại mật khẩu root): Hệ thống tự động đưa bạn vào cấu hình 'root#'. Gõ lần lượt:\n  configure\n  set system root-authentication plain-text-password\n(Gõ mật khẩu mới 2 lần theo yêu cầu màn hình, lưu ý lúc gõ mật khẩu trên Linux/Junos màn hình sẽ không hiện dấu *).",
+      "Bước 6 (Lưu cấu hình & Khởi động lại): Gõ lần lượt:\n  commit\n  exit\n  request system reboot\n(Gõ 'yes' để xác nhận khởi động lại bình thường)."
+    ],
+    "warning": "Khi gõ mật khẩu mới, bàn phím vẫn nhận bình thường dù màn hình không hiện ký tự hay dấu *."
   },
   {
-    "vendor": "Fortinet (FortiGate FortiOS)",
+    "vendor": "Fortinet (FortiGate Firewall)",
     "icon": "border-rose-500/30 text-rose-400 bg-rose-500/10",
+    "baud": "9600 bps (8-N-1)",
+    "keepConfig": "GIỮ NGUYÊN 100% CẤU HÌNH CŨ",
+    "downtime": "Khoảng 2 - 3 phút",
     "steps": [
-      "1. Cắm dây Console (baud 9600), rút nguồn và cắm lại nguồn FortiGate.",
-      "2. Chuẩn bị sẵn Serial Number của FortiGate (in trên tem mặt dưới, ví dụ: FGT60ETK18012345).",
-      "3. Ngay khi màn hình boot xong hiện chữ \"login:\", bạn có đúng 14 GIÂY để đăng nhập bằng tài khoản cứu hộ maintainer:",
-      "   - Username: maintainer",
-      "   - Password: bcpb + <Số_Serial_Viết_Hoa> (Ví dụ: bcpbFGT60ETK18012345).",
-      "4. Đăng nhập thành công, đổi ngay mật khẩu admin: config system admin -> edit admin -> set password <Pass_Mới> -> end."
-    ]
+      "Bước 1 (Chuẩn bị trước Serial Number): Lật mặt dưới/sau thiết bị FortiGate, chụp ảnh lại dòng Serial Number (ví dụ: FGT60FTK21012345). Mở sẵn Notepad gõ sẵn chữ 'bcpb' nối liền với Serial Number viết hoa hoàn toàn -> ví dụ: bcpbFGT60FTK21012345 rồi Copy sẵn vào bộ nhớ tạm.",
+      "Bước 2 (Kết nối PuTTY): Cắm dây Console -> mở PuTTY -> Speed: 9600 -> Open.",
+      "Bước 3 (Khởi động lại & Đếm 14 giây vàng): Rút nguồn cắm lại FortiGate. Chờ khoảng 1-2 phút đến khi màn hình vừa hiện chữ 'FortiGate login:' -> bạn chỉ có ĐÚNG 14 GIÂY để đăng nhập:",
+      "  - Dòng login: gõ maintainer rồi Enter.",
+      "  - Dòng Password: bấm chuột phải 1 cái trong PuTTY để Paste chuỗi 'bcpb + Serial' vừa chuẩn bị rồi Enter.",
+      "Bước 4 (Đổi mật khẩu mới): Khi đã vào được dấu nhắc '# ', gõ lần lượt các lệnh sau:\n  config system admin\n  edit admin\n  set password MatKhauMoi@2026\n  next\n  end",
+      "Bước 5 (Kiểm tra): Thoát ra và thử đăng nhập lại bằng user 'admin' và mật khẩu mới vừa đặt."
+    ],
+    "warning": "Tài khoản cứu hộ 'maintainer' chỉ hoạt động trong đúng 14 giây đầu tiên sau khi khởi động xong. Nếu quá 14 giây, hãy rút nguồn làm lại từ Bước 3."
   },
   {
-    "vendor": "Huawei (VRP OS)",
+    "vendor": "Huawei (VRP OS Switch / Router)",
     "icon": "border-blue-500/30 text-blue-400 bg-blue-500/10",
+    "baud": "9600 bps (8-N-1)",
+    "keepConfig": "GIỮ NGUYÊN 100% CẤU HÌNH CŨ",
+    "downtime": "Khoảng 3 - 5 phút",
     "steps": [
-      "1. Cắm dây Console (baud 9600), tắt và bật lại nguồn switch Huawei.",
-      "2. Khi màn hình hiện dòng \"Press Ctrl+B to enter BootROM menu...\", nhấn tổ hợp phím \"Ctrl + B\".",
-      "3. Nhập mật khẩu BootROM mặc định: \"Admin@huawei.com\" (hoặc \"admin\", \"huawei\").",
-      "4. Menu BootROM hiện ra: Chọn mục \"Clear password for console user\" (thường là phím số 7 hoặc 8).",
-      "5. Chọn tiếp mục \"Boot with default mode\" để vào switch mà không đòi hỏi mật khẩu.",
-      "6. Đặt lại mật khẩu: local-user admin password cipher <Pass_Mới> -> save."
-    ]
+      "Bước 1 (Kết nối PuTTY): Cắm dây Console -> Mở PuTTY -> Speed: 9600 -> Open.",
+      "Bước 2 (Vào BootROM): Tắt và bật lại nguồn thiết bị. Khi màn hình hiện dòng 'Press Ctrl+B to enter BootROM menu...' -> nhấn giữ tổ hợp phím Ctrl + B.",
+      "Bước 3 (Nhập pass BootROM mặc định): Thử 1 trong các mật khẩu mặc định sau (chú ý chữ hoa/thường):\n  Admin@huawei.com\n(Nếu sai thử tiếp: huawei hoặc admin@huawei.com hoặc không nhập gì bấm Enter).",
+      "Bước 4 (Xóa mật khẩu Console tạm thời): Trong menu BootROM, nhìn tìm dòng có chữ 'Clear password for console user' (thường là phím số 7 hoặc 8) -> bấm số tương ứng và bấm 'y' xác nhận.",
+      "Bước 5 (Khởi động vào Switch): Chọn mục 'Boot with default mode' (thường là phím số 1) để Switch khởi động lên.",
+      "Bước 6 (Đổi mật khẩu mới & Lưu): Khi đã vào được màn hình '<Huawei>', gõ lần lượt:\n  system-view\n  aaa\n  local-user admin password irreversible-cipher MatKhauMoi@2026\n  quit\n  quit\n  save\n(Bấm 'y' để lưu cấu hình)."
+    ],
+    "warning": "Thao tác này chỉ xóa mật khẩu đăng nhập qua dây Console, toàn bộ cấu hình VLAN và định tuyến vẫn còn nguyên."
   },
   {
     "vendor": "MikroTik (RouterOS)",
     "icon": "border-purple-500/30 text-purple-400 bg-purple-500/10",
+    "baud": "115200 bps (hoặc dùng nút Reset phần cứng)",
+    "keepConfig": "Lưu ý: Nút Reset cứng sẽ XÓA SẠCH cấu hình! Dùng Netinstall mới giữ được cấu hình.",
+    "downtime": "Khoảng 2 - 5 phút",
     "steps": [
-      "1. Cách 1 (Phần cứng): Rút nguồn, nhấn giữ nút \"Reset\", cắm lại nguồn, giữ khoảng 5s cho đến khi đèn LED nhấp nháy thì buông tay (Thiết bị về mặc định: user admin, không mật khẩu).",
-      "2. Cách 2 (Cài lại Netinstall giữ cấu hình): Nối dây mạng cổng ether1 vào máy tính, chạy phần mềm Netinstall trên Windows.",
-      "3. Nhấn giữ nút Reset đến khi Netinstall nhận thiết bị -> Chọn Keep Configuration nếu muốn giữ lại cấu hình cũ chỉ reset mật khẩu."
-    ]
+      "CÁCH 1 (Nếu bạn muốn XÓA SẠCH làm lại từ đầu - Dễ nhất):",
+      "  1. Rút dây nguồn Router MikroTik ra.",
+      "  2. Dùng tăm/que chọc SIM nhấn giữ chặt nút 'RES' (Reset) trên vỏ máy.",
+      "  3. Vừa giữ nút Reset vừa cắm dây nguồn lại.",
+      "  4. Giữ tiếp khoảng 5 giây cho đến khi đèn 'USR' hoặc 'ACT' bắt đầu nhấp nháy thì thả tay ra.",
+      "  5. Mở phần mềm Winbox trên máy tính -> tìm thiết bị -> đăng nhập user 'admin', mật khẩu để trống.",
+      "CÁCH 2 (Nếu BẮT BUỘC phải giữ lại cấu hình cũ của công ty):",
+      "  1. Tải phần mềm Netinstall (trên trang chủ mikrotik.com) về máy tính Windows, đặt IP tĩnh máy tính là 192.168.88.2/24.",
+      "  2. Cắm dây mạng trực tiếp từ máy tính vào cổng số 1 (ether1) của MikroTik.",
+      "  3. Thực hiện giữ nút Reset + cắm nguồn khoảng 15 giây cho đến khi Router hiện lên trong danh sách của phần mềm Netinstall -> tick chọn 'Keep Old Configuration' -> bấm Install."
+    ],
+    "warning": "CẨN THẬN: Ở Cách 1 nếu giữ nút Reset quá 5 giây (đèn hết nhấp nháy và sáng đứng yên), thiết bị sẽ xóa trắng toàn bộ cấu hình!"
   },
   {
     "vendor": "Ruijie Networks (RGOS)",
     "icon": "border-cyan-500/30 text-cyan-400 bg-cyan-500/10",
+    "baud": "9600 bps (8-N-1)",
+    "keepConfig": "GIỮ NGUYÊN 100% CẤU HÌNH CŨ",
+    "downtime": "Khoảng 3 - 4 phút",
     "steps": [
-      "1. Cắm dây Console (baud 9600), tắt và bật lại nguồn.",
-      "2. Khi thấy màn hình đếm ngược Ctrl+C hoặc Ctrl+B -> Bấm tổ hợp phím \"Ctrl + C\" liên tục để vào U-Boot.",
-      "3. Gõ lệnh: rename config.text config.bak",
-      "4. Gõ lệnh: run bootcmd hoặc boot để khởi động vào switch trắng mật khẩu.",
-      "5. Đổi lại tên file cấu hình và nạp lại: copy config.bak config.text -> copy config.text running-config",
-      "6. Đổi mật khẩu: username admin privilege 15 secret <Pass_Mới> -> write memory."
-    ]
+      "Bước 1 (Kết nối PuTTY): Cắm cáp Console -> mở PuTTY -> Speed: 9600 -> Open.",
+      "Bước 2 (Vào Bootloader): Rút nguồn cắm lại Switch. Khi màn hình hiện thông báo đếm ngược -> nhấn liên tục tổ hợp phím Ctrl + C để vào dấu nhắc bootloader (thường là 'Ruijie>' hoặc 'boot>').",
+      "Bước 3 (Đổi tên file cấu hình cũ): Gõ lệnh:\n  rename config.text config.bak",
+      "Bước 4 (Khởi động trắng pass): Gõ lệnh:\n  run bootcmd\n(Hoặc gõ 'boot' tùy dòng máy). Chờ Switch khởi động lên.",
+      "Bước 5 (Nạp lại cấu hình cũ của công ty): Gõ lần lượt:\n  enable\n  copy config.bak config.text\n  copy config.text running-config",
+      "Bước 6 (Đặt mật khẩu mới & Lưu): Gõ:\n  configure terminal\n  username admin privilege 15 secret MatKhauMoi@2026\n  enable secret MatKhauMoi@2026\n  end\n  write memory"
+    ],
+    "warning": "Không tắt nguồn đột ngột khi Switch đang chạy lệnh 'write memory'."
   },
   {
     "vendor": "Edgecore Networks (ECS)",
     "icon": "border-teal-500/30 text-teal-400 bg-teal-500/10",
+    "baud": "115200 bps (8-N-1)",
+    "keepConfig": "GIỮ NGUYÊN 100% CẤU HÌNH CŨ",
+    "downtime": "Khoảng 3 - 4 phút",
     "steps": [
-      "1. Cắm dây Console (baud 115200 bps), khởi động lại thiết bị.",
-      "2. Bấm phím \"Esc\" hoặc \"Ctrl+B\" khi màn hình bootloader hiển thị.",
-      "3. Chọn menu bỏ qua file startup-config (Ignore Startup Configuration).",
-      "4. Sau khi vào hệ thống: copy startup1.cfg running-config -> đặt lại password -> copy running-config startup-config."
-    ]
+      "Bước 1 (Kết nối PuTTY): Cắm cáp Console -> Mở PuTTY -> Speed: 115200 -> Open.",
+      "Bước 2 (Vào menu Boot): Rút nguồn cắm lại Switch. Nhấn phím Esc hoặc Ctrl + B liên tục ngay khi màn hình vừa hiện chữ khởi động.",
+      "Bước 3 (Bỏ qua file cấu hình lúc khởi động): Trong menu hiện ra, chọn tùy chọn 'Ignore Startup Configuration' hoặc 'Skip startup config' để vào Switch không cần mật khẩu.",
+      "Bước 4 (Nạp lại cấu hình cũ): Khi vào được dấu nhắc 'Console#', gõ:\n  copy startup1.cfg running-config\n(Nhấn Enter nếu được hỏi xác nhận).",
+      "Bước 5 (Đổi mật khẩu mới & Lưu lại): Gõ lần lượt:\n  configure\n  username admin access-level 15 password 0 MatKhauMoi@2026\n  exit\n  copy running-config startup-config\n(Nhấn Enter xác nhận lưu đè vào startup1.cfg)."
+    ],
+    "warning": "Nhớ bước cuối 'copy running-config startup-config', nếu quên thì lần sau cúp điện sẽ quay lại mật khẩu cũ."
   }
 ]

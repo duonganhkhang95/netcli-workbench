@@ -561,32 +561,54 @@ function renderPorts(query = '') {
   });
 }
 
-// Render Recovery Playbooks
+// Render Recovery Playbooks (Detailed Beginner-Friendly Format)
 function renderRecoveryPlaybook() {
   const container = document.getElementById('recovery-cards-container');
   if (!container) return;
   container.innerHTML = '';
   RECOVERY_PLAYBOOK_DATA.forEach(item => {
     const card = document.createElement('div');
-    card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between card-smooth-fx animate-fade-in-up';
+    card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col justify-between card-smooth-fx animate-fade-in-up';
 
     let stepsHtml = item.steps.map(s => {
-      return `<li class="text-xs text-slate-300 leading-relaxed">${escapeHtml(s)}</li>`;
+      const formatted = escapeHtml(s).replace(/\n/g, '<br>');
+      return `<li class="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/70 font-sans whitespace-pre-wrap">${formatted}</li>`;
     }).join('');
 
     card.innerHTML = `
       <div>
-        <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
-          <span class="text-xs font-bold px-2.5 py-1 rounded border ${item.icon}">
+        <div class="flex items-center justify-between flex-wrap gap-2 pb-3 mb-3 border-b border-slate-800">
+          <span class="text-xs sm:text-sm font-bold px-2.5 py-1 rounded border ${item.icon}">
             ${escapeHtml(item.vendor)}
           </span>
-          <button class="btn-copy-recovery text-[11px] text-slate-400 hover:text-emerald-400 font-medium flex items-center gap-1" data-copy="${escapeAttr(item.steps.join('\n'))}">
-            Copy các bước
+          <button class="btn-copy-recovery text-[11px] text-slate-300 hover:text-white bg-slate-800 hover:bg-emerald-600 px-2.5 py-1 rounded-lg font-medium flex items-center gap-1 transition" data-copy="${escapeAttr(item.steps.join('\n\n'))}">
+            Copy toàn bộ hướng dẫn
           </button>
         </div>
+
+        <!-- Meta Badges: Baudrate, Keep Config, Downtime -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3 text-[11px]">
+          <div class="bg-slate-900 px-2.5 py-1.5 rounded border border-slate-800">
+            <span class="text-slate-400">Baudrate:</span> <strong class="text-amber-400 font-mono">${escapeHtml(item.baud || '9600 bps')}</strong>
+          </div>
+          <div class="bg-slate-900 px-2.5 py-1.5 rounded border border-slate-800">
+            <span class="text-slate-400">Thời gian ngắt:</span> <strong class="text-cyan-300">${escapeHtml(item.downtime || '3-5 phút')}</strong>
+          </div>
+          <div class="bg-slate-900 px-2.5 py-1.5 rounded border border-slate-800">
+            <span class="text-emerald-400 font-semibold">${escapeHtml(item.keepConfig || 'Giữ nguyên cấu hình cũ')}</span>
+          </div>
+        </div>
+
         <ol class="space-y-2 list-none">
           ${stepsHtml}
         </ol>
+
+        ${item.warning ? `
+          <div class="mt-3 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-[11px] text-rose-300 flex items-start gap-2">
+            <span class="font-bold shrink-0">⚠️ LƯU Ý QUAN TRỌNG:</span>
+            <span>${escapeHtml(item.warning)}</span>
+          </div>
+        ` : ''}
       </div>
     `;
     container.appendChild(card);
