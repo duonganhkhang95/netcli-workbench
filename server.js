@@ -23,6 +23,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 const apiRoutes = require('./routes/api');
 app.use('/api', apiRoutes);
 
+// Return JSON 404 for unknown /api/* routes (never return index.html for API calls)
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: `API endpoint not found: ${req.originalUrl}` });
+});
+
 // Fallback to index.html for SPA
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

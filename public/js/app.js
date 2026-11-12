@@ -27,27 +27,55 @@ try {
   console.warn('Cannot read localStorage', e);
 }
 
+// Safe JSON fetcher with HTTP status check
+async function safeFetchJson(url, fallbackValue) {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      console.warn(`API ${url} returned HTTP ${res.status}`);
+      return { ok: false, data: fallbackValue, status: res.status, url };
+    }
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      console.warn(`API ${url} did not return JSON (${contentType})`);
+      return { ok: false, data: fallbackValue, status: res.status, url };
+    }
+    const data = await res.json();
+    return { ok: true, data };
+  } catch (e) {
+    console.error(`Fetch error for ${url}:`, e);
+    return { ok: false, data: fallbackValue, error: e.message, url };
+  }
+}
+
 // Fetch all datasets from Node.js Express REST API in parallel
 async function fetchAllData() {
   try {
-    const [vendorsRes, tasksRes, showRes, portsRes, recoveryRes, consoleRes, fiberRes] = await Promise.all([
-      fetch('/api/vendors').then(r => r.json()),
-      fetch('/api/tasks').then(r => r.json()),
-      fetch('/api/show-commands').then(r => r.json()),
-      fetch('/api/ports').then(r => r.json()),
-      fetch('/api/recovery').then(r => r.json()),
-      fetch('/api/console-serial').then(r => r.json()),
-      fetch('/api/fiber-optics').then(r => r.json())
+    const [vendorsR, tasksR, showR, portsR, recoveryR, consoleR, fiberR] = await Promise.all([
+      safeFetchJson('/api/vendors', {}),
+      safeFetchJson('/api/tasks', []),
+      safeFetchJson('/api/show-commands', []),
+      safeFetchJson('/api/ports', []),
+      safeFetchJson('/api/recovery', []),
+      safeFetchJson('/api/console-serial', []),
+      safeFetchJson('/api/fiber-optics', {})
     ]);
 
-    CONSOLE_SERIAL_DATA = consoleRes;
-    FIBER_OPTICS_DATA = fiberRes;
+    VENDORS_INFO = vendorsR.data;
+    CORE_TASKS = tasksR.data;
+    SHOW_COMMANDS_DATA = showR.data;
+    NETWORK_PORTS_DATA = portsR.data;
+    RECOVERY_PLAYBOOK_DATA = recoveryR.data;
+    CONSOLE_SERIAL_DATA = consoleR.data;
+    FIBER_OPTICS_DATA = fiberR.data;
 
-    VENDORS_INFO = vendorsRes;
-    CORE_TASKS = tasksRes;
-    SHOW_COMMANDS_DATA = showRes;
-    NETWORK_PORTS_DATA = portsRes;
-    RECOVERY_PLAYBOOK_DATA = recoveryRes;
+    const failedApis = [vendorsR, tasksR, showR, portsR, recoveryR, consoleR, fiberR].filter(r => !r.ok);
+    if (failedApis.length > 0) {
+      console.warn('Một số API chưa phản hồi (có thể cần chạy: pm2 restart netcli):', failedApis.map(f => f.url));
+      if (failedApis.length >= 5) {
+        showToast('Không kết nối được API Node.js! Hãy kiểm tra pm2 status.');
+      }
+    }
 
     // Build Rosetta Data from show commands or tasks
     ROSETTA_DATA = [
@@ -63,18 +91,27 @@ async function fetchAllData() {
       { task: 'Khởi động lại (Reboot)', cisco: 'reload', ciscocbs: 'reload', juniper: 'request system reboot', fortinet: 'execute reboot', huawei: 'reboot', mikrotik: '/system reboot', ruijie: 'reload', edgecore: 'reload' }
     ];
 
-    // Initial Renders
-    renderRosetta();
-    renderPorts();
-    renderRecoveryPlaybook();
-    initSubnetCalculator();
-    renderCards();
-    renderShowCommands();
-    renderConsoleSerial();
-    initQuickBuilder();
-    initDiagnosticAssistant();
-    initMikroTikSuite();
-    renderFiberOptics();
+    // Initial Renders (each wrapped safely)
+    const initSteps = [
+      ['renderRosetta', renderRosetta],
+      ['renderPorts', renderPorts],
+      ['renderRecoveryPlaybook', renderRecoveryPlaybook],
+      ['initSubnetCalculator', initSubnetCalculator],
+      ['renderCards', renderCards],
+      ['renderShowCommands', renderShowCommands],
+      ['renderConsoleSerial', renderConsoleSerial],
+      ['initQuickBuilder', initQuickBuilder],
+      ['initDiagnosticAssistant', initDiagnosticAssistant],
+      ['initMikroTikSuite', initMikroTikSuite],
+      ['renderFiberOptics', renderFiberOptics]
+    ];
+    for (const [name, fn] of initSteps) {
+      try {
+        if (typeof fn === 'function') fn();
+      } catch (uiErr) {
+        console.error(`UI render error in ${name}:`, uiErr);
+      }
+    }
     console.log('✅ NetCLI API data loaded successfully!');
   } catch (err) {
     console.error('API Error, check server status:', err);
