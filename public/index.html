@@ -22,6 +22,9 @@
       }
     }
   </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white">
 
@@ -1078,10 +1081,36 @@
             </div>
           </div>
 
-          <button id="btn-run-ssh-probe" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            <span>Kết Nối Trực Tiếp &amp; Bắt Đầu Scan Cấu Hình</span>
-          </button>
+          <div class="flex flex-wrap gap-2">
+            <button id="btn-open-web-terminal" type="button" class="flex-1 py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:opacity-90 text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2">
+              <span>💻 Mở Terminal Trực Tiếp (PuTTY / Xterm.js)</span>
+            </button>
+            <button id="btn-run-ssh-probe" type="button" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold rounded-lg transition border border-slate-700 flex items-center justify-center gap-1.5" title="Tự động chạy lệnh và đẩy sang AI Chẩn đoán">
+              <span>⚡ Auto Scan AI</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- REAL INTERACTIVE XTERM.JS TERMINAL (PUTTY IN BROWSER) -->
+        <div class="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-2xl">
+          <div class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="flex gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              </span>
+              <span class="font-bold text-white ml-1">TraceDeck Live Terminal (SSH / Telnet)</span>
+              <span id="xterm-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">🔴 Chưa kết nối</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button id="btn-term-send-show" type="button" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-700 text-cyan-300 hover:text-white text-[11px] font-medium transition">📋 Gửi Show Run &amp; Intf</button>
+              <button id="btn-term-send-ai" type="button" class="px-2.5 py-1 rounded bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-[11px] font-semibold transition">🩺 Đẩy Terminal sang AI</button>
+              <button id="btn-term-disconnect" type="button" class="hidden px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold transition">⛔ Ngắt</button>
+              <button id="btn-term-clear" type="button" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] transition">🧹 Clear</button>
+            </div>
+          </div>
+          <div id="xterm-container" class="w-full h-[380px] p-2 bg-[#09090b] font-mono text-xs overflow-hidden"></div>
         </div>
 
         <!-- Live SSH / Telnet MAC Address Port Tracer -->

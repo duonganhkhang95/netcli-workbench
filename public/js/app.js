@@ -2189,6 +2189,177 @@ function initDiagnosticAssistant() {
   // Run Diagnosis / Audit
   document.getElementById('btn-run-diagnosis')?.addEventListener('click', runAuditDiagnosis);
 
+
+  // ==========================================
+  // REAL XTERM.JS + WEBSOCKET INTERACTIVE TERMINAL (PUTTY IN BROWSER)
+  // ==========================================
+  let term = null;
+  let fitAddon = null;
+  let termWs = null;
+  let termLogBuffer = '';
+
+  function initXterm() {
+    const container = document.getElementById('xterm-container');
+    if (!container || term) return;
+    if (typeof window.Terminal === 'function') {
+      term = new window.Terminal({
+        cursorBlink: true,
+        fontSize: 13,
+        fontFamily: '"JetBrains Mono", Menlo, Consolas, monospace',
+        theme: { background: '#09090b', foreground: '#e4e4e7', cursor: '#ff6363', selectionBackground: 'rgba(255,99,99,0.3)' },
+        scrollback: 5000
+      });
+      if (typeof window.FitAddon?.FitAddon === 'function') {
+        fitAddon = new window.FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+      }
+      term.open(container);
+      if (fitAddon) fitAddon.fit();
+      term.writeln('\x1b[38;5;203mTraceDeck Live Terminal (SSH / Telnet)\x1b[0m — Nhập IP, Tài khoản, Mật khẩu ở trên rồi bấm \x1b[32mMở Terminal Trực Tiếp\x1b[0m.');
+      term.onData((data) => {
+        if (termWs && termWs.readyState === WebSocket.OPEN) {
+          termWs.send(JSON.stringify({ type: 'input', data }));
+        }
+      });
+      window.addEventListener('resize', () => {
+        if (fitAddon && term) {
+          fitAddon.fit();
+          if (termWs && termWs.readyState === WebSocket.OPEN) {
+            termWs.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+          }
+        }
+      });
+    }
+  }
+
+  function setTermStatus(state, label) {
+    const badge = document.getElementById('xterm-status-badge');
+    const disBtn = document.getElementById('btn-term-disconnect');
+    if (badge) {
+      if (state === 'connected') {
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        badge.textContent = label || '🟢 Đã kết nối';
+      } else if (state === 'connecting') {
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        badge.textContent = label || '🟡 Đang kết nối...';
+      } else {
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700';
+        badge.textContent = label || '🔴 Chưa kết nối';
+      }
+    }
+    if (disBtn) disBtn.classList.toggle('hidden', state !== 'connected');
+  }
+
+  document.getElementById('btn-open-web-terminal')?.addEventListener('click', () => {
+    const host = document.getElementById('ssh-target-ip')?.value.trim();
+    const protocol = protoSelect?.value || 'SSH';
+    const port = portInput?.value.trim() || (protocol === 'TELNET' ? '23' : '22');
+    const username = document.getElementById('ssh-target-user')?.value.trim();
+    const password = document.getElementById('ssh-target-pass')?.value;
+
+    if (!host) { showToast('Vui lòng nhập địa chỉ IP thiết bị!'); return; }
+    if (protocol === 'SSH' && (!username || !password)) {
+      showToast('Vui lòng nhập đầy đủ Username và Password SSH!');
+      return;
+    }
+
+    if (window.location.protocol === 'file:') {
+      showToast('Terminal trực tiếp cần chạy trên Ubuntu Node.js Server (không chạy ở file tĩnh).');
+      return;
+    }
+
+    initXterm();
+    if (fitAddon) fitAddon.fit();
+    termLogBuffer = '';
+
+    if (termWs) { try { termWs.close(); } catch (e) {} }
+    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    setTermStatus('connecting', `🟡 Đang kết nối ${protocol}...`);
+    termWs = new WebSocket(`${wsProto}//${window.location.host}/ws/terminal`);
+
+    termWs.onopen = () => {
+      termWs.send(JSON.stringify({
+        type: 'connect',
+        protocol,
+        host,
+        port,
+        username,
+        password,
+        cols: term ? term.cols : 100,
+        rows: term ? term.rows : 28
+      }));
+      if (term) term.focus();
+    };
+
+    termWs.onmessage = (evt) => {
+      let msg;
+      try { msg = JSON.parse(evt.data); } catch (e) { return; }
+      if (msg.type === 'data') {
+        termLogBuffer += msg.data;
+        if (termLogBuffer.length > 250000) termLogBuffer = termLogBuffer.slice(-200000);
+        if (term) term.write(msg.data);
+      } else if (msg.type === 'status') {
+        if (msg.state === 'connected') {
+          setTermStatus('connected', `🟢 ${msg.protocol} • ${msg.host}:${msg.port}`);
+          showToast(`Đã mở Terminal ${msg.protocol} tới ${msg.host}!`);
+        } else {
+          setTermStatus('disconnected', '🔴 Đã ngắt kết nối');
+        }
+      } else if (msg.type === 'error') {
+        if (term) term.writeln(`\r\n\x1b[31m[LỖI] ${msg.message}\x1b[0m\r\n`);
+        showToast('❌ ' + msg.message);
+        setTermStatus('disconnected', '🔴 Lỗi kết nối');
+      }
+    };
+
+    termWs.onerror = () => {
+      setTermStatus('disconnected', '🔴 Lỗi WebSocket');
+      if (term) term.writeln('\r\n\x1b[31m[LỖI] Không thể mở WebSocket /ws/terminal trên server.\x1b[0m\r\n');
+    };
+  });
+
+  document.getElementById('btn-term-disconnect')?.addEventListener('click', () => {
+    if (termWs && termWs.readyState === WebSocket.OPEN) {
+      termWs.send(JSON.stringify({ type: 'disconnect' }));
+      termWs.close();
+    }
+    setTermStatus('disconnected');
+  });
+
+  document.getElementById('btn-term-clear')?.addEventListener('click', () => {
+    if (term) term.clear();
+    termLogBuffer = '';
+  });
+
+  document.getElementById('btn-term-send-show')?.addEventListener('click', () => {
+    if (!termWs || termWs.readyState !== WebSocket.OPEN) {
+      showToast('Hãy mở Terminal kết nối trước khi gửi lệnh!');
+      return;
+    }
+    const v = document.getElementById('mac-trace-vendor')?.value || 'cisco';
+    let cmd = 'terminal length 0\nshow running-config\nshow interfaces\n';
+    if (v === 'huawei') cmd = 'screen-length 0 temporary\ndisplay current-configuration\ndisplay interface brief\n';
+    else if (v === 'ciscocbs') cmd = 'terminal datadump\nshow running-config\nshow interfaces status\n';
+    else if (v === 'mikrotik') cmd = '/export terse\n/interface ethernet print stats\n';
+    else if (v === 'juniper') cmd = 'set cli screen-length 0\nshow configuration | display set\nshow interfaces terse\n';
+    else if (v === 'aruba') cmd = 'no page\nshow running-config\nshow interface\n';
+    termWs.send(JSON.stringify({ type: 'input', data: cmd }));
+    if (term) term.focus();
+  });
+
+  document.getElementById('btn-term-send-ai')?.addEventListener('click', () => {
+    const cleanLog = termLogBuffer.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim();
+    if (!cleanLog) {
+      showToast('Chưa có dữ liệu trong Terminal để phân tích!');
+      return;
+    }
+    const textarea = document.getElementById('diag-raw-input');
+    if (textarea) textarea.value = cleanLog;
+    const hintedVendor = document.getElementById('mac-trace-vendor')?.value || 'AUTO';
+    renderAuditReport(buildSmartAudit(cleanLog, hintedVendor));
+    showToast('Đã đẩy toàn bộ log từ Terminal sang AI Chẩn Đoán!');
+  });
+
   // REAL Live Remote SSH / Telnet Probe (No fake simulation!)
   document.getElementById('btn-run-ssh-probe')?.addEventListener('click', async () => {
     const host = document.getElementById('ssh-target-ip')?.value.trim();
