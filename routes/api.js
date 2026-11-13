@@ -633,14 +633,14 @@ function buildSmartAudit(configText, vendorHint) {
   if (!hasNtp) {
     score -= 10;
     let fixScript = '';
-    if (v === 'cisco' || v === 'ruijie') fixScript = 'clock timezone ICT 7 0\nntp server vn.pool.ntp.org';
-    else if (v === 'ciscocbs') fixScript = 'clock timezone ICT +7\nsntp unicast client enable\nsntp server vn.pool.ntp.org';
+    if (v === 'cisco' || v === 'ruijie') fixScript = 'clock timezone ICT 7 0\nntp server 216.239.35.0';
+    else if (v === 'ciscocbs') fixScript = 'clock timezone ICT +7\nsntp unicast client enable\nsntp server 216.239.35.0';
     else if (v === 'huawei') fixScript = 'clock timezone ICT add 07:00:00\nntp-service unicast-server vn.pool.ntp.org';
-    else if (v === 'aruba') fixScript = 'clock timezone Asia/Ho_Chi_Minh\nntp server vn.pool.ntp.org\nntp enable';
-    else if (v === 'juniper') fixScript = 'set system time-zone Asia/Ho_Chi_Minh\nset system ntp server vn.pool.ntp.org';
+    else if (v === 'aruba') fixScript = 'clock timezone Asia/Ho_Chi_Minh\nntp server 216.239.35.0\nntp enable';
+    else if (v === 'juniper') fixScript = 'set system time-zone Asia/Ho_Chi_Minh\nset system ntp server 216.239.35.0';
     else if (v === 'mikrotik') fixScript = '/system clock set time-zone-name=Asia/Ho_Chi_Minh\n/system ntp client set enabled=yes servers=vn.pool.ntp.org';
     else if (v === 'fortinet') fixScript = 'config system ntp\n set ntpsync enable\n set type custom\n config ntpserver\n  edit 1\n   set server "vn.pool.ntp.org"\n  next\n end\nend';
-    else fixScript = 'ntp server vn.pool.ntp.org';
+    else fixScript = 'ntp server 216.239.35.0';
 
     issues.push({
       severity: 'suboptimal',
@@ -656,40 +656,33 @@ function buildSmartAudit(configText, vendorHint) {
   }
 
   score = Math.max(0, Math.min(100, score));
-  const execPosts = issues.map(i => i.execPostCmd).filter(Boolean);
+  // Build 100% Pure Executable Optimizer Script (NO comment lines, NO interactive [confirm] prompts!)
   let optLines = [];
-  if (v === 'mikrotik') {
-    optLines.push(`# KICH BAN OPTIMIZER - MIKROTIK ROUTEROS (CHUẨN CÚ PHÁP)`);
-    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+  if (issues.length === 0) {
+    optLines.push(v === 'huawei' ? 'display current-configuration' : 'show running-config');
+  } else if (v === 'mikrotik') {
+    issues.forEach(i => { optLines.push(i.fixScript); });
   } else if (v === 'juniper') {
-    optLines.push(`# KICH BAN OPTIMIZER - JUNIPER JUNOS`);
-    optLines.push(`configure`);
-    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
-    optLines.push(`commit and-quit`);
+    optLines.push('configure');
+    issues.forEach(i => { optLines.push(i.fixScript); });
+    optLines.push('commit and-quit');
   } else if (v === 'fortinet') {
-    optLines.push(`# KICH BAN OPTIMIZER - FORTIGATE FORTIOS`);
-    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    issues.forEach(i => { optLines.push(i.fixScript); });
   } else if (v === 'huawei') {
-    optLines.push(`# KICH BAN OPTIMIZER - HUAWEI VRP (NHẬN DIỆN: ${faultyIntf})`);
-    optLines.push(`system-view`);
-    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
-    optLines.push(`return`);
-    execPosts.forEach(c => optLines.push(c));
-    optLines.push(`save`);
+    optLines.push('system-view');
+    issues.forEach(i => { optLines.push(i.fixScript); });
+    optLines.push('return');
+    optLines.push('save force');
   } else if (v === 'ciscocbs') {
-    optLines.push(`! KICH BAN OPTIMIZER - CISCO BUSINESS CBS (NHẬN DIỆN: ${faultyIntf})`);
-    optLines.push(`configure`);
-    issues.forEach(i => { optLines.push(`! ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
-    optLines.push(`end`);
-    execPosts.forEach(c => optLines.push(c));
-    optLines.push(`copy running-config startup-config`);
+    optLines.push('configure');
+    issues.forEach(i => { optLines.push(i.fixScript); });
+    optLines.push('end');
+    optLines.push('write');
   } else {
-    optLines.push(`! KICH BAN OPTIMIZER - ${v.toUpperCase()} (NHẬN DIỆN: ${faultyIntf})`);
-    optLines.push(`configure terminal`);
-    issues.forEach(i => { optLines.push(`! ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
-    optLines.push(`end`);
-    execPosts.forEach(c => optLines.push(c));
-    optLines.push(`write memory`);
+    optLines.push('configure terminal');
+    issues.forEach(i => { optLines.push(i.fixScript); });
+    optLines.push('end');
+    optLines.push('write memory');
   }
 
   let whatIsHappening = '';

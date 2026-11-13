@@ -2685,14 +2685,14 @@ function buildSmartAudit(configText, vendorHint) {
   if (!hasNtp) {
     score -= 10;
     let fixScript = '';
-    if (v === 'cisco' || v === 'ruijie') fixScript = 'clock timezone ICT 7 0\nntp server vn.pool.ntp.org';
-    else if (v === 'ciscocbs') fixScript = 'clock timezone ICT +7\nsntp unicast client enable\nsntp server vn.pool.ntp.org';
+    if (v === 'cisco' || v === 'ruijie') fixScript = 'clock timezone ICT 7 0\nntp server 216.239.35.0';
+    else if (v === 'ciscocbs') fixScript = 'clock timezone ICT +7\nsntp unicast client enable\nsntp server 216.239.35.0';
     else if (v === 'huawei') fixScript = 'clock timezone ICT add 07:00:00\nntp-service unicast-server vn.pool.ntp.org';
-    else if (v === 'aruba') fixScript = 'clock timezone Asia/Ho_Chi_Minh\nntp server vn.pool.ntp.org\nntp enable';
-    else if (v === 'juniper') fixScript = 'set system time-zone Asia/Ho_Chi_Minh\nset system ntp server vn.pool.ntp.org';
+    else if (v === 'aruba') fixScript = 'clock timezone Asia/Ho_Chi_Minh\nntp server 216.239.35.0\nntp enable';
+    else if (v === 'juniper') fixScript = 'set system time-zone Asia/Ho_Chi_Minh\nset system ntp server 216.239.35.0';
     else if (v === 'mikrotik') fixScript = '/system clock set time-zone-name=Asia/Ho_Chi_Minh\n/system ntp client set enabled=yes servers=vn.pool.ntp.org';
     else if (v === 'fortinet') fixScript = 'config system ntp\n set ntpsync enable\n set type custom\n config ntpserver\n  edit 1\n   set server "vn.pool.ntp.org"\n  next\n end\nend';
-    else fixScript = 'ntp server vn.pool.ntp.org';
+    else fixScript = 'ntp server 216.239.35.0';
 
     issues.push({
       severity: 'suboptimal',
@@ -2708,40 +2708,33 @@ function buildSmartAudit(configText, vendorHint) {
   }
 
   score = Math.max(0, Math.min(100, score));
-  const execPosts = issues.map(i => i.execPostCmd).filter(Boolean);
+  // Build 100% Pure Executable Optimizer Script (NO comment lines, NO interactive [confirm] prompts!)
   let optLines = [];
-  if (v === 'mikrotik') {
-    optLines.push(`# KICH BAN OPTIMIZER - MIKROTIK ROUTEROS (CHUẨN CÚ PHÁP)`);
-    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+  if (issues.length === 0) {
+    optLines.push(v === 'huawei' ? 'display current-configuration' : 'show running-config');
+  } else if (v === 'mikrotik') {
+    issues.forEach(i => { optLines.push(i.fixScript); });
   } else if (v === 'juniper') {
-    optLines.push(`# KICH BAN OPTIMIZER - JUNIPER JUNOS`);
-    optLines.push(`configure`);
-    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
-    optLines.push(`commit and-quit`);
+    optLines.push('configure');
+    issues.forEach(i => { optLines.push(i.fixScript); });
+    optLines.push('commit and-quit');
   } else if (v === 'fortinet') {
-    optLines.push(`# KICH BAN OPTIMIZER - FORTIGATE FORTIOS`);
-    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    issues.forEach(i => { optLines.push(i.fixScript); });
   } else if (v === 'huawei') {
-    optLines.push(`# KICH BAN OPTIMIZER - HUAWEI VRP (NHẬN DIỆN: ${faultyIntf})`);
-    optLines.push(`system-view`);
-    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
-    optLines.push(`return`);
-    execPosts.forEach(c => optLines.push(c));
-    optLines.push(`save`);
+    optLines.push('system-view');
+    issues.forEach(i => { optLines.push(i.fixScript); });
+    optLines.push('return');
+    optLines.push('save force');
   } else if (v === 'ciscocbs') {
-    optLines.push(`! KICH BAN OPTIMIZER - CISCO BUSINESS CBS (NHẬN DIỆN: ${faultyIntf})`);
-    optLines.push(`configure`);
-    issues.forEach(i => { optLines.push(`! ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
-    optLines.push(`end`);
-    execPosts.forEach(c => optLines.push(c));
-    optLines.push(`copy running-config startup-config`);
+    optLines.push('configure');
+    issues.forEach(i => { optLines.push(i.fixScript); });
+    optLines.push('end');
+    optLines.push('write');
   } else {
-    optLines.push(`! KICH BAN OPTIMIZER - ${v.toUpperCase()} (NHẬN DIỆN: ${faultyIntf})`);
-    optLines.push(`configure terminal`);
-    issues.forEach(i => { optLines.push(`! ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
-    optLines.push(`end`);
-    execPosts.forEach(c => optLines.push(c));
-    optLines.push(`write memory`);
+    optLines.push('configure terminal');
+    issues.forEach(i => { optLines.push(i.fixScript); });
+    optLines.push('end');
+    optLines.push('write memory');
   }
 
   let whatIsHappening = '';
@@ -2776,8 +2769,239 @@ function buildSmartAudit(configText, vendorHint) {
   };
 }
 
+
+// ==========================================
+// REAL LIVE SSH (SHELL + KEYBOARD-INTERACTIVE) & TELNET ENGINE
+// ==========================================
+function normalizeMacFormats(rawMac) {
+  const hex = String(rawMac || '').replace(/[^0-9a-fA-F]/g, '').toLowerCase();
+  if (hex.length !== 12) return null;
+  const colon = hex.match(/.{2}/g).join(':');
+  const dash = hex.match(/.{2}/g).join('-');
+  const dot = hex.match(/.{4}/g).join('.');
+  const huaweiDash = hex.match(/.{4}/g).join('-');
+  return { hex, colon, COLON: colon.toUpperCase(), dash, dot, huaweiDash };
+}
+
+function getMacLookupCmd(vendor, mac) {
+  switch (vendor) {
+    case 'huawei': return `display mac-address ${mac.huaweiDash}`;
+    case 'juniper': return `show ethernet-switching table | match ${mac.colon}`;
+    case 'aruba': return `show mac-address-table address ${mac.colon}`;
+    case 'mikrotik': return `/interface bridge host print where mac-address="${mac.COLON}"`;
+    case 'fortinet': return `diagnose ip arp list | grep ${mac.colon}`;
+    case 'ciscocbs':
+    case 'edgecore': return `show mac address-table address ${mac.colon}`;
+    case 'ruijie': return `show mac-address-table address ${mac.dot}`;
+    case 'cisco':
+    default: return `show mac address-table address ${mac.dot}`;
+  }
+}
+
+function getLiveProbeCommands(vendor) {
+  switch (vendor) {
+    case 'huawei': return ['screen-length 0 temporary', 'display current-configuration', 'display interface brief'];
+    case 'juniper': return ['set cli screen-length 0', 'show configuration | display set', 'show interfaces terse'];
+    case 'mikrotik': return ['/export terse', '/interface ethernet print stats'];
+    case 'fortinet': return ['config system global', 'end', 'show system interface'];
+    case 'aruba': return ['no page', 'show running-config', 'show interface'];
+    case 'ciscocbs': return ['terminal datadump', 'show running-config', 'show interfaces status'];
+    case 'cisco':
+    default: return ['terminal length 0', 'show running-config', 'show interfaces'];
+  }
+}
+
+function parseMacTraceOutput(rawOutput, mac) {
+  const lines = String(rawOutput || '').split(/\r?\n/);
+  const matches = [];
+  const intfRe = /(TenGigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+|GigabitEthernet\s+\d+\/\d+|Gi\d+\/\d+\/\d+|Gi\d+\/\d+|gi\d+\/0\/\d+|FastEthernet\d+\/\d+|Fa\d+\/\d+|Port-channel\d+|Po\d+|Eth-Trunk\d+|GE\d+\/\d+\/\d+|ge-\d+\/\d+\/\d+|xe-\d+\/\d+\/\d+|1\/1\/\d+|ether\d+|sfp[^\s]*|bridge[^\s]*)/i;
+  for (const line of lines) {
+    const low = line.toLowerCase().replace(/[^0-9a-z]/g, '');
+    if (low.includes(mac.hex)) {
+      const mIntf = line.match(intfRe);
+      const mVlan = line.match(/^\s*(\d{1,4})\s+/);
+      const isStatic = /static|permanent/i.test(line);
+      const port = mIntf ? mIntf[1].trim() : null;
+      if (port) {
+        const isUplink = /port-channel|^po\d+|eth-trunk|sfp|trunk|uplink/i.test(port);
+        matches.push({
+          vlan: mVlan ? mVlan[1] : 'N/A',
+          port,
+          type: isStatic ? 'STATIC' : 'DYNAMIC',
+          isUplink,
+          rawLine: line.trim()
+        });
+      }
+    }
+  }
+  return matches;
+}
+
+function execTelnetCommands({ host, port, username, password, commands }) {
+  return new Promise((resolve, reject) => {
+    const net = require('net');
+    const socket = new net.Socket();
+    let buffer = '';
+    let step = 0; // 0: wait user, 1: wait pass, 2: wait prompt, 3: running
+    let settled = false;
+    const done = (err, out) => {
+      if (settled) return;
+      settled = true;
+      try { socket.destroy(); } catch (e) {}
+      if (err) reject(err); else resolve(out);
+    };
+    socket.setTimeout(10000);
+    socket.on('timeout', () => done(new Error(`Telnet timeout: Không thể kết nối tới ${host}:${port || 23} trong 10 giây.`)));
+    socket.on('error', (err) => done(new Error(`Lỗi kết nối Telnet (${host}:${port || 23}): ${err.message}`)));
+    socket.on('data', (chunk) => {
+      const str = chunk.toString('utf8');
+      buffer += str;
+      if (step === 2 && /login incorrect|authentication failed|bad passwords|invalid password|access denied/i.test(str)) {
+        return done(new Error('Xác thực Telnet thất bại: Sai Username hoặc Password!'));
+      }
+      if (step === 0 && /username|login|user:/i.test(buffer)) {
+        step = 1;
+        socket.write(username + '\r\n');
+      } else if (step <= 1 && /password:/i.test(buffer)) {
+        step = 2;
+        socket.write(password + '\r\n');
+      } else if (step === 2 && /[>#\]]\s*$/.test(buffer.trim()) && !/password:/i.test(buffer.slice(-20))) {
+        step = 3;
+        let delay = 150;
+        commands.forEach((cmd) => {
+          setTimeout(() => socket.write(cmd + '\r\n'), delay);
+          delay += 700;
+        });
+        setTimeout(() => done(null, buffer), delay + 1200);
+      }
+    });
+    socket.connect(parseInt(port, 10) || 23, host);
+  });
+}
+
+function execSshCommands({ host, port, username, password, commands }) {
+  return new Promise((resolve, reject) => {
+    let Client;
+    try {
+      ({ Client } = require('ssh2'));
+    } catch (e) {
+      return reject(new Error('Chưa cài đặt thư viện ssh2 trên Ubuntu Server. Chạy: cd /var/www/netcli && npm install --omit=dev && pm2 restart netcli'));
+    }
+    const conn = new Client();
+    let out = '';
+    let settled = false;
+    const done = (err, resOut) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { conn.end(); } catch (e) {}
+      if (err) reject(err); else resolve(resOut);
+    };
+
+    const timer = setTimeout(() => {
+      done(new Error(`SSH timeout: Không thể kết nối tới ${host}:${port || 22} trong 12 giây.`));
+    }, 12000);
+
+    conn.on('keyboard-interactive', (name, instructions, instructionsLang, prompts, finish) => {
+      finish(prompts.map(() => password));
+    });
+
+    conn.on('ready', () => {
+      // Use interactive shell so Cisco/CBS/Huawei/Ruijie switches never reject exec channel
+      conn.shell({ term: 'vt100' }, (err, stream) => {
+        if (err) return done(err);
+        stream.on('data', (d) => { out += d.toString('utf8'); });
+        stream.stderr.on('data', (d) => { out += d.toString('utf8'); });
+        stream.on('close', () => done(null, out));
+
+        let delay = 300;
+        commands.forEach((cmd) => {
+          setTimeout(() => {
+            try { stream.write(cmd + '\n'); } catch (e) {}
+          }, delay);
+          delay += 700;
+        });
+        setTimeout(() => {
+          try { stream.write('exit\n'); } catch (e) {}
+          setTimeout(() => done(null, out), 600);
+        }, delay + 1000);
+      });
+    }).on('error', (err) => {
+      let msg = err.message || 'Lỗi kết nối SSH';
+      if (/authentication/i.test(msg)) msg = 'Xác thực SSH thất bại: Sai Username hoặc Password!';
+      else if (/ECONNREFUSED/i.test(msg)) msg = `Từ chối kết nối tại ${host}:${port || 22} (Kiểm tra đã bật SSH trên thiết bị chưa).`;
+      else if (/ETIMEDOUT|EHOSTUNREACH/i.test(msg)) msg = `Không thông mạng tới ${host}:${port || 22} (Timeout / Unreachable).`;
+      done(new Error(msg));
+    }).connect({
+      host,
+      port: parseInt(port, 10) || 22,
+      username,
+      password,
+      tryKeyboard: true,
+      readyTimeout: 8000,
+      algorithms: {
+        kex: ['diffie-hellman-group-exchange-sha256', 'diffie-hellman-group14-sha256', 'diffie-hellman-group14-sha1', 'diffie-hellman-group1-sha1', 'ecdh-sha2-nistp256'],
+        cipher: ['aes128-ctr', 'aes256-ctr', 'aes128-gcm@openssh.com', 'aes128-cbc', '3des-cbc'],
+        serverHostKey: ['ssh-ed25519', 'rsa-sha2-512', 'rsa-sha2-256', 'ssh-rsa', 'ecdsa-sha2-nistp256']
+      }
+    });
+  });
+}
+
+router.post('/diagnose/live-probe', async (req, res) => {
+  const { protocol, host, port, username, password, vendor } = req.body || {};
+  const proto = String(protocol || 'SSH').toUpperCase();
+  if (!['SSH', 'TELNET'].includes(proto)) {
+    return res.status(400).json({ success: false, error: 'Giao thức không hợp lệ (chỉ hỗ trợ SSH hoặc TELNET).' });
+  }
+  if (!host || !username || !password) {
+    return res.status(400).json({ success: false, error: 'Vui lòng nhập đầy đủ IP thiết bị, Username và Password.' });
+  }
+  const vKey = vendor && vendor !== 'AUTO' ? vendor : 'cisco';
+  const cmds = getLiveProbeCommands(vKey);
+  try {
+    const rawOutput = proto === 'TELNET'
+      ? await execTelnetCommands({ host, port: port || 23, username, password, commands: cmds })
+      : await execSshCommands({ host, port: port || 22, username, password, commands: cmds });
+    const audit = buildSmartAudit(rawOutput, vendor || 'AUTO');
+    res.json({ success: true, protocol: proto, host, rawOutput, audit });
+  } catch (err) {
+    res.status(401).json({ success: false, error: err.message || 'Kết nối tới thiết bị thất bại.' });
+  }
+});
+
+router.post('/diagnose/mac-trace', async (req, res) => {
+  const { protocol, host, port, username, password, vendor, macAddress } = req.body || {};
+  const proto = String(protocol || '').toUpperCase();
+  if (!['SSH', 'TELNET'].includes(proto)) {
+    return res.status(400).json({ success: false, error: 'Tính năng dò cổng theo MAC bắt buộc phải kết nối trực tiếp qua SSH hoặc Telnet vào thiết bị.' });
+  }
+  if (!host || !username || !password) {
+    return res.status(400).json({ success: false, error: 'Vui lòng nhập đầy đủ IP thiết bị, Username và Password SSH/Telnet.' });
+  }
+  const mac = normalizeMacFormats(macAddress);
+  if (!mac) {
+    return res.status(400).json({ success: false, error: 'Địa chỉ MAC không hợp lệ. Vui lòng nhập đủ 12 ký tự Hex (VD: aa:bb:cc:dd:ee:ff).' });
+  }
+
+  const vKey = vendor || 'cisco';
+  const lookupCmd = getMacLookupCmd(vKey, mac);
+  const cmds = vKey === 'mikrotik' || vKey === 'fortinet' ? [lookupCmd] : ['terminal length 0', lookupCmd];
+
+  try {
+    const rawOutput = proto === 'TELNET'
+      ? await execTelnetCommands({ host, port: port || 23, username, password, commands: cmds })
+      : await execSshCommands({ host, port: port || 22, username, password, commands: cmds });
+
+    const matches = parseMacTraceOutput(rawOutput, mac);
+    res.json({ success: true, protocol: proto, host, vendor: vKey, macFormats: mac, commandExecuted: lookupCmd, matches, rawOutput });
+  } catch (err) {
+    res.status(401).json({ success: false, error: err.message || 'Không thể kết nối tới thiết bị.', commandExecuted: lookupCmd });
+  }
+});
+
 function fallbackClientAudit(text, protocol, ip) {
-  const hintedVendor = document.getElementById('diag-oneshot-vendor')?.value || 'AUTO';
+  const hintedVendor = document.getElementById('mac-trace-vendor')?.value || 'AUTO';
   return buildSmartAudit(text, hintedVendor);
 }
 
