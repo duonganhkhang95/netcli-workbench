@@ -726,7 +726,7 @@ function buildSmartAudit(configText, vendorHint) {
 
 
 // ==========================================
-// LIVE SSH / TELNET MAC ADDRESS PORT TRACER
+// REAL LIVE SSH (SHELL + KEYBOARD-INTERACTIVE) & TELNET ENGINE
 // ==========================================
 function normalizeMacFormats(rawMac) {
   const hex = String(rawMac || '').replace(/[^0-9a-fA-F]/g, '').toLowerCase();
@@ -740,24 +740,29 @@ function normalizeMacFormats(rawMac) {
 
 function getMacLookupCmd(vendor, mac) {
   switch (vendor) {
-    case 'huawei':
-      return `display mac-address ${mac.huaweiDash}`;
-    case 'juniper':
-      return `show ethernet-switching table | match ${mac.colon}`;
-    case 'aruba':
-      return `show mac-address-table address ${mac.colon}`;
-    case 'mikrotik':
-      return `/interface bridge host print where mac-address="${mac.COLON}"`;
-    case 'fortinet':
-      return `diagnose ip arp list | grep ${mac.colon}`;
+    case 'huawei': return `display mac-address ${mac.huaweiDash}`;
+    case 'juniper': return `show ethernet-switching table | match ${mac.colon}`;
+    case 'aruba': return `show mac-address-table address ${mac.colon}`;
+    case 'mikrotik': return `/interface bridge host print where mac-address="${mac.COLON}"`;
+    case 'fortinet': return `diagnose ip arp list | grep ${mac.colon}`;
     case 'ciscocbs':
-    case 'edgecore':
-      return `show mac address-table address ${mac.colon}`;
-    case 'ruijie':
-      return `show mac-address-table address ${mac.dot}`;
+    case 'edgecore': return `show mac address-table address ${mac.colon}`;
+    case 'ruijie': return `show mac-address-table address ${mac.dot}`;
     case 'cisco':
-    default:
-      return `show mac address-table address ${mac.dot}`;
+    default: return `show mac address-table address ${mac.dot}`;
+  }
+}
+
+function getLiveProbeCommands(vendor) {
+  switch (vendor) {
+    case 'huawei': return ['screen-length 0 temporary', 'display current-configuration', 'display interface brief'];
+    case 'juniper': return ['set cli screen-length 0', 'show configuration | display set', 'show interfaces terse'];
+    case 'mikrotik': return ['/export terse', '/interface ethernet print stats'];
+    case 'fortinet': return ['config system global', 'end', 'show system interface'];
+    case 'aruba': return ['no page', 'show running-config', 'show interface'];
+    case 'ciscocbs': return ['terminal datadump', 'show running-config', 'show interfaces status'];
+    case 'cisco':
+    default: return ['terminal length 0', 'show running-config', 'show interfaces'];
   }
 }
 
@@ -787,12 +792,12 @@ function parseMacTraceOutput(rawOutput, mac) {
   return matches;
 }
 
-function execTelnetCommand({ host, port, username, password, command }) {
+function execTelnetCommands({ host, port, username, password, commands }) {
   return new Promise((resolve, reject) => {
     const net = require('net');
     const socket = new net.Socket();
     let buffer = '';
-    let step = 0;
+    let step = 0; // 0: wait user, 1: wait pass, 2: wait prompt, 3: running
     let settled = false;
     const done = (err, out) => {
       if (settled) return;
@@ -800,114 +805,153 @@ function execTelnetCommand({ host, port, username, password, command }) {
       try { socket.destroy(); } catch (e) {}
       if (err) reject(err); else resolve(out);
     };
-    socket.setTimeout(9000);
-    socket.on('timeout', () => done(new Error('Telnet timeout: Thiết bị không phản hồi trong 9 giây.')));
-    socket.on('error', (err) => done(err));
+    socket.setTimeout(10000);
+    socket.on('timeout', () => done(new Error(`Telnet timeout: Không thể kết nối tới ${host}:${port || 23} trong 10 giây.`)));
+    socket.on('error', (err) => done(new Error(`Lỗi kết nối Telnet (${host}:${port || 23}): ${err.message}`)));
     socket.on('data', (chunk) => {
       const str = chunk.toString('utf8');
       buffer += str;
+      if (step === 2 && /login incorrect|authentication failed|bad passwords|invalid password|access denied/i.test(str)) {
+        return done(new Error('Xác thực Telnet thất bại: Sai Username hoặc Password!'));
+      }
       if (step === 0 && /username|login|user:/i.test(buffer)) {
         step = 1;
         socket.write(username + '\r\n');
       } else if (step <= 1 && /password:/i.test(buffer)) {
         step = 2;
         socket.write(password + '\r\n');
-      } else if (step === 2 && /[>#\]]\s*$/.test(buffer.trim())) {
+      } else if (step === 2 && /[>#\]]\s*$/.test(buffer.trim()) && !/password:/i.test(buffer.slice(-20))) {
         step = 3;
-        socket.write('terminal length 0\r\n');
-        setTimeout(() => socket.write(command + '\r\n'), 300);
-        setTimeout(() => done(null, buffer), 2200);
+        let delay = 150;
+        commands.forEach((cmd) => {
+          setTimeout(() => socket.write(cmd + '\r\n'), delay);
+          delay += 700;
+        });
+        setTimeout(() => done(null, buffer), delay + 1200);
       }
     });
     socket.connect(parseInt(port, 10) || 23, host);
   });
 }
 
-function execSshCommand({ host, port, username, password, command }) {
+function execSshCommands({ host, port, username, password, commands }) {
   return new Promise((resolve, reject) => {
     let Client;
     try {
       ({ Client } = require('ssh2'));
     } catch (e) {
-      return reject(new Error('Chưa cài đặt thư viện ssh2 trên Ubuntu Server. Hãy chạy: cd /var/www/netcli && npm install && pm2 restart netcli'));
+      return reject(new Error('Chưa cài đặt thư viện ssh2 trên Ubuntu Server. Chạy: cd /var/www/netcli && npm install --omit=dev && pm2 restart netcli'));
     }
     const conn = new Client();
     let out = '';
-    const timer = setTimeout(() => {
+    let settled = false;
+    const done = (err, resOut) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       try { conn.end(); } catch (e) {}
-      reject(new Error('SSH timeout: Thiết bị không phản hồi trong 10 giây.'));
-    }, 10000);
+      if (err) reject(err); else resolve(resOut);
+    };
+
+    const timer = setTimeout(() => {
+      done(new Error(`SSH timeout: Không thể kết nối tới ${host}:${port || 22} trong 12 giây.`));
+    }, 12000);
+
+    conn.on('keyboard-interactive', (name, instructions, instructionsLang, prompts, finish) => {
+      finish(prompts.map(() => password));
+    });
 
     conn.on('ready', () => {
-      conn.exec(command, (err, stream) => {
-        if (err) {
-          clearTimeout(timer);
-          conn.end();
-          return reject(err);
-        }
-        stream.on('close', () => {
-          clearTimeout(timer);
-          conn.end();
-          resolve(out);
-        }).on('data', (d) => { out += d.toString('utf8'); })
-          .stderr.on('data', (d) => { out += d.toString('utf8'); });
+      // Use interactive shell so Cisco/CBS/Huawei/Ruijie switches never reject exec channel
+      conn.shell({ term: 'vt100' }, (err, stream) => {
+        if (err) return done(err);
+        stream.on('data', (d) => { out += d.toString('utf8'); });
+        stream.stderr.on('data', (d) => { out += d.toString('utf8'); });
+        stream.on('close', () => done(null, out));
+
+        let delay = 300;
+        commands.forEach((cmd) => {
+          setTimeout(() => {
+            try { stream.write(cmd + '\n'); } catch (e) {}
+          }, delay);
+          delay += 700;
+        });
+        setTimeout(() => {
+          try { stream.write('exit\n'); } catch (e) {}
+          setTimeout(() => done(null, out), 600);
+        }, delay + 1000);
       });
     }).on('error', (err) => {
-      clearTimeout(timer);
-      reject(err);
+      let msg = err.message || 'Lỗi kết nối SSH';
+      if (/authentication/i.test(msg)) msg = 'Xác thực SSH thất bại: Sai Username hoặc Password!';
+      else if (/ECONNREFUSED/i.test(msg)) msg = `Từ chối kết nối tại ${host}:${port || 22} (Kiểm tra đã bật SSH trên thiết bị chưa).`;
+      else if (/ETIMEDOUT|EHOSTUNREACH/i.test(msg)) msg = `Không thông mạng tới ${host}:${port || 22} (Timeout / Unreachable).`;
+      done(new Error(msg));
     }).connect({
       host,
       port: parseInt(port, 10) || 22,
       username,
       password,
+      tryKeyboard: true,
       readyTimeout: 8000,
       algorithms: {
-        kex: ['diffie-hellman-group14-sha1', 'diffie-hellman-group1-sha1', 'diffie-hellman-group14-sha256', 'ecdh-sha2-nistp256'],
-        cipher: ['aes128-ctr', 'aes256-ctr', 'aes128-cbc', '3des-cbc']
+        kex: ['diffie-hellman-group-exchange-sha256', 'diffie-hellman-group14-sha256', 'diffie-hellman-group14-sha1', 'diffie-hellman-group1-sha1', 'ecdh-sha2-nistp256'],
+        cipher: ['aes128-ctr', 'aes256-ctr', 'aes128-gcm@openssh.com', 'aes128-cbc', '3des-cbc'],
+        serverHostKey: ['ssh-ed25519', 'rsa-sha2-512', 'rsa-sha2-256', 'ssh-rsa', 'ecdsa-sha2-nistp256']
       }
     });
   });
 }
 
-router.post('/diagnose/mac-trace', async (req, res) => {
-  const { protocol, host, port, username, password, vendor, macAddress } = req.body || {};
-  if (!protocol || !['SSH', 'TELNET'].includes(String(protocol).toUpperCase())) {
-    return res.status(400).json({ error: 'Tính năng dò cổng theo MAC bắt buộc phải kết nối trực tiếp qua SSH hoặc Telnet vào thiết bị.' });
+router.post('/diagnose/live-probe', async (req, res) => {
+  const { protocol, host, port, username, password, vendor } = req.body || {};
+  const proto = String(protocol || 'SSH').toUpperCase();
+  if (!['SSH', 'TELNET'].includes(proto)) {
+    return res.status(400).json({ success: false, error: 'Giao thức không hợp lệ (chỉ hỗ trợ SSH hoặc TELNET).' });
   }
   if (!host || !username || !password) {
-    return res.status(400).json({ error: 'Vui lòng nhập đầy đủ IP thiết bị, Username và Password SSH/Telnet.' });
+    return res.status(400).json({ success: false, error: 'Vui lòng nhập đầy đủ IP thiết bị, Username và Password.' });
+  }
+  const vKey = vendor && vendor !== 'AUTO' ? vendor : 'cisco';
+  const cmds = getLiveProbeCommands(vKey);
+  try {
+    const rawOutput = proto === 'TELNET'
+      ? await execTelnetCommands({ host, port: port || 23, username, password, commands: cmds })
+      : await execSshCommands({ host, port: port || 22, username, password, commands: cmds });
+    const audit = buildSmartAudit(rawOutput, vendor || 'AUTO');
+    res.json({ success: true, protocol: proto, host, rawOutput, audit });
+  } catch (err) {
+    res.status(401).json({ success: false, error: err.message || 'Kết nối tới thiết bị thất bại.' });
+  }
+});
+
+router.post('/diagnose/mac-trace', async (req, res) => {
+  const { protocol, host, port, username, password, vendor, macAddress } = req.body || {};
+  const proto = String(protocol || '').toUpperCase();
+  if (!['SSH', 'TELNET'].includes(proto)) {
+    return res.status(400).json({ success: false, error: 'Tính năng dò cổng theo MAC bắt buộc phải kết nối trực tiếp qua SSH hoặc Telnet vào thiết bị.' });
+  }
+  if (!host || !username || !password) {
+    return res.status(400).json({ success: false, error: 'Vui lòng nhập đầy đủ IP thiết bị, Username và Password SSH/Telnet.' });
   }
   const mac = normalizeMacFormats(macAddress);
   if (!mac) {
-    return res.status(400).json({ error: 'Địa chỉ MAC không hợp lệ. Vui lòng nhập đủ 12 ký tự Hex (VD: aa:bb:cc:dd:ee:ff hoặc aabb.ccdd.eeff).' });
+    return res.status(400).json({ success: false, error: 'Địa chỉ MAC không hợp lệ. Vui lòng nhập đủ 12 ký tự Hex (VD: aa:bb:cc:dd:ee:ff).' });
   }
 
   const vKey = vendor || 'cisco';
   const lookupCmd = getMacLookupCmd(vKey, mac);
-  const proto = String(protocol).toUpperCase();
+  const cmds = vKey === 'mikrotik' || vKey === 'fortinet' ? [lookupCmd] : ['terminal length 0', lookupCmd];
 
   try {
     const rawOutput = proto === 'TELNET'
-      ? await execTelnetCommand({ host, port: port || 23, username, password, command: lookupCmd })
-      : await execSshCommand({ host, port: port || 22, username, password, command: lookupCmd });
+      ? await execTelnetCommands({ host, port: port || 23, username, password, commands: cmds })
+      : await execSshCommands({ host, port: port || 22, username, password, commands: cmds });
 
     const matches = parseMacTraceOutput(rawOutput, mac);
-    res.json({
-      success: true,
-      protocol: proto,
-      host,
-      vendor: vKey,
-      macFormats: mac,
-      commandExecuted: lookupCmd,
-      matches,
-      rawOutput
-    });
+    res.json({ success: true, protocol: proto, host, vendor: vKey, macFormats: mac, commandExecuted: lookupCmd, matches, rawOutput });
   } catch (err) {
-    res.status(502).json({
-      success: false,
-      error: err.message || 'Không thể kết nối tới thiết bị.',
-      commandExecuted: lookupCmd
-    });
+    res.status(401).json({ success: false, error: err.message || 'Không thể kết nối tới thiết bị.', commandExecuted: lookupCmd });
   }
 });
 

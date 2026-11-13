@@ -2189,24 +2189,53 @@ function initDiagnosticAssistant() {
   // Run Diagnosis / Audit
   document.getElementById('btn-run-diagnosis')?.addEventListener('click', runAuditDiagnosis);
 
-  // Live Remote SSH / Telnet probe simulation
-  document.getElementById('btn-run-ssh-probe')?.addEventListener('click', () => {
-    const ip = document.getElementById('ssh-target-ip')?.value.trim();
-    const proto = protoSelect?.value || 'SSH';
-    const port = portInput?.value || (proto === 'TELNET' ? '23' : '22');
+  // REAL Live Remote SSH / Telnet Probe (No fake simulation!)
+  document.getElementById('btn-run-ssh-probe')?.addEventListener('click', async () => {
+    const host = document.getElementById('ssh-target-ip')?.value.trim();
+    const protocol = protoSelect?.value || 'SSH';
+    const port = portInput?.value.trim() || (protocol === 'TELNET' ? '23' : '22');
+    const username = document.getElementById('ssh-target-user')?.value.trim();
+    const password = document.getElementById('ssh-target-pass')?.value;
+    const vendor = document.getElementById('mac-trace-vendor')?.value || 'AUTO';
 
-    if (!ip) {
-      showToast('Vui lòng nhập địa chỉ IP!');
+    if (!host || !username || !password) {
+      showToast('Vui lòng nhập đầy đủ IP, Tài khoản và Mật khẩu SSH/Telnet!');
       return;
     }
 
-    showToast(`Đang mở phiên ${proto} tới ${ip}:${port}...`);
-    setTimeout(() => {
+    const probeBtn = document.getElementById('btn-run-ssh-probe');
+    if (probeBtn) { probeBtn.disabled = true; probeBtn.classList.add('opacity-60'); }
+    showToast(`Đang kết nối thật (${protocol}) tới ${host}:${port}...`);
+
+    try {
+      const resp = await fetch('/api/diagnose/live-probe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ protocol, host, port, username, password, vendor })
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.success) {
+        throw new Error(data.error || 'Kết nối hoặc xác thực thất bại!');
+      }
       const textarea = document.getElementById('diag-raw-input');
-      if (textarea) textarea.value = SAMPLE_AUDIT_LOGS.suboptimal;
-      btnPaste?.click();
-      runAuditDiagnosis(proto, ip);
-    }, 1200);
+      if (textarea) textarea.value = data.rawOutput || '';
+      renderAuditReport(data.audit);
+      showToast(`Đã lấy cấu hình thật từ ${host} qua ${protocol}!`);
+    } catch (err) {
+      const isCanvas = window.location.protocol === 'file:' || String(err.message).includes('Failed to fetch') || String(err.message).includes('Unexpected token');
+      const msg = isCanvas
+        ? 'Kết nối SSH/Telnet thật chỉ hoạt động khi chạy trên máy chủ Node.js Ubuntu Server.'
+        : err.message;
+      showToast('❌ ' + msg);
+      document.getElementById('diag-results-box')?.classList.add('hidden');
+      const resBox = document.getElementById('mac-trace-result');
+      if (resBox) {
+        resBox.classList.remove('hidden');
+        resBox.innerHTML = `<div class="p-3 rounded-lg bg-rose-950/40 border border-rose-500/40 text-rose-300">❌ <strong>Lỗi ${escapeHtml(protocol)}:</strong> ${escapeHtml(msg)}</div>`;
+      }
+    } finally {
+      if (probeBtn) { probeBtn.disabled = false; probeBtn.classList.remove('opacity-60'); }
+    }
   });
 
   // Optimizer Modal open/close
