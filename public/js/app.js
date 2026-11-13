@@ -2470,7 +2470,8 @@ function initDiagnosticAssistant() {
         ciscocbs: 'terminal datadump',
         huawei: 'screen-length 0 temporary',
         aruba: 'no page',
-        juniper: 'set cli screen-length 0'
+        juniper: 'set cli screen-length 0',
+        draytek_sw: ''
       }[detectedVendor] || '';
 
       const lookupCmd = getMacLookupCmd(detectedVendor, mac);
@@ -2580,6 +2581,7 @@ async function runAuditDiagnosis(protocol = 'MANUAL', ip = '') {
 
 function detectVendorFromLog(text, hintedVendor) {
   if (hintedVendor && hintedVendor !== 'AUTO') return hintedVendor;
+  if (/Vty-\d+[>#]|VigorSwitch|DrayTek/i.test(text)) return 'draytek_sw';
   if (/\/interface|\/ip address|RouterOS|sfp-sfpplus/i.test(text)) return 'mikrotik';
   if (/config system global|config firewall policy|FortiGate/i.test(text)) return 'fortinet';
   if (/sysname\s+|system-view|display\s+current|GigabitEthernet0\/0\/|bpdu-protection/i.test(text)) return 'huawei';
@@ -2914,6 +2916,7 @@ function getMacLookupCmd(vendor, mac) {
     case 'aruba': return `show mac-address-table address ${mac.colon}`;
     case 'mikrotik': return `/interface bridge host print where mac-address="${mac.COLON}"`;
     case 'fortinet': return `diagnose ip arp list | grep ${mac.colon}`;
+    case 'draytek_sw':
     case 'ciscocbs':
     case 'edgecore': return `show mac address-table address ${mac.colon}`;
     case 'ruijie': return `show mac-address-table address ${mac.dot}`;
@@ -2938,7 +2941,7 @@ function getLiveProbeCommands(vendor) {
 function parseMacTraceOutput(rawOutput, mac) {
   const lines = String(rawOutput || '').split(/\r?\n/);
   const matches = [];
-  const intfRe = /(TenGigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+|GigabitEthernet\s+\d+\/\d+|Gi\d+\/\d+\/\d+|Gi\d+\/\d+|gi\d+\/0\/\d+|FastEthernet\d+\/\d+|Fa\d+\/\d+|Port-channel\d+|Po\d+|Eth-Trunk\d+|GE\d+\/\d+\/\d+|ge-\d+\/\d+\/\d+|xe-\d+\/\d+\/\d+|1\/1\/\d+|ether\d+|sfp[^\s]*|bridge[^\s]*)/i;
+  const intfRe = /(TenGigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+|GigabitEthernet\s+\d+\/\d+|Gi\d+\/\d+\/\d+|Gi\d+\/\d+|gi\d+\/0\/\d+|FastEthernet\d+\/\d+|Fa\d+\/\d+|Port-channel\d+|Po\d+|Eth-Trunk\d+|10GE\d+|GE\d+\/\d+\/\d+|GE\d+|LAG\d+|ge-\d+\/\d+\/\d+|xe-\d+\/\d+\/\d+|1\/1\/\d+|ether\d+|sfp[^\s]*|bridge[^\s]*)/i;
   for (const line of lines) {
     const low = line.toLowerCase().replace(/[^0-9a-z]/g, '');
     if (low.includes(mac.hex)) {
