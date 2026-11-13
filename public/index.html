@@ -43,13 +43,13 @@
         
         <!-- Left: Live Status Dot + Brand -->
         <div class="flex items-center gap-2 shrink-0 pl-1">
-          <div class="relative flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-tr from-rose-500 via-red-500 to-amber-500 text-white font-mono font-bold text-xs shadow-md cursor-pointer island-pill-btn" onclick="document.getElementById('nav-btn-generator').click()" title="TraceDeck v2.6">
+          <div class="relative flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-tr from-rose-500 via-red-500 to-amber-500 text-white font-mono font-bold text-xs shadow-md cursor-pointer island-pill-btn" onclick="document.getElementById('nav-btn-generator').click()" title="TraceDeck v2.7">
             &gt;_
             <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-black animate-pulse"></span>
           </div>
           <div class="hidden sm:flex items-center gap-1.5">
             <span class="text-xs sm:text-sm font-bold text-white tracking-tight cursor-pointer hover:text-emerald-400 transition" onclick="document.getElementById('nav-btn-generator').click()">TraceDeck</span>
-            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-emerald-300">v2.6</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-emerald-300">v2.7</span>
           </div>
         </div>
 
@@ -1125,21 +1125,7 @@
             Dán địa chỉ MAC thiết bị cần tìm (hỗ trợ mọi định dạng <code class="text-slate-200">aa:bb:cc:dd:ee:ff</code>, <code class="text-slate-200">aabb.ccdd.eeff</code>, <code class="text-slate-200">aa-bb-cc-dd-ee-ff</code>). Hệ thống dùng thông tin SSH/Telnet ở trên để truy vấn trực tiếp bảng MAC thực tế trên Switch/Router.
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
-            <div class="sm:col-span-4">
-              <label class="block text-slate-300 font-medium mb-1">Hãng thiết bị:</label>
-              <select id="mac-trace-vendor" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
-                <option value="cisco">Cisco Catalyst (IOS)</option>
-                <option value="ciscocbs">Cisco CBS 250/350/550</option>
-                <option value="huawei">Huawei VRP</option>
-                <option value="juniper">Juniper Junos</option>
-                <option value="aruba">HPE Aruba AOS-CX</option>
-                <option value="ruijie">Ruijie RGOS</option>
-                <option value="edgecore">Edgecore ECS</option>
-                <option value="mikrotik">MikroTik RouterOS</option>
-                <option value="fortinet">Fortinet FortiGate</option>
-              </select>
-            </div>
-            <div class="sm:col-span-5">
+            <div class="sm:col-span-9">
               <label class="block text-slate-300 font-medium mb-1">Địa chỉ MAC cần tìm:</label>
               <input id="mac-trace-input" type="text" placeholder="VD: 00:1a:2b:3c:4d:5e hoặc 001a.2b3c.4d5e" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
             </div>
@@ -1475,7 +1461,7 @@
           </div>
           <div class="flex items-center justify-between py-1.5">
             <span class="text-slate-400" data-i18n="about_version">Phiên bản hiện tại:</span>
-            <span id="about-current-ver" class="font-mono font-bold text-amber-400">v2.6.0 (Enterprise)</span>
+            <span id="about-current-ver" class="font-mono font-bold text-amber-400">v2.7.0 (Enterprise)</span>
           </div>
         </div>
 
@@ -1671,7 +1657,7 @@
   <footer class="mt-auto border-t border-slate-900 bg-slate-950 py-4 px-4 text-center text-xs text-slate-500">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
       <div>
-        &copy; 2026 <strong class="text-slate-300">TraceDeck</strong> v2.6 &bull; Bản quyền thuộc về <strong class="text-emerald-400">KhangIT</strong>
+        &copy; 2026 <strong class="text-slate-300">TraceDeck</strong> v2.7 &bull; Bản quyền thuộc về <strong class="text-emerald-400">KhangIT</strong>
       </div>
       <div class="flex items-center gap-3">
         <a href="mailto:duonganhkhang95@gmail.com" class="hover:text-emerald-400 transition">duonganhkhang95@gmail.com</a>

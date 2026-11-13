@@ -150,9 +150,36 @@ try {
             tryKeyboard: true,
             readyTimeout: 10000,
             algorithms: {
-              kex: ['diffie-hellman-group-exchange-sha256', 'diffie-hellman-group14-sha256', 'diffie-hellman-group14-sha1', 'diffie-hellman-group1-sha1', 'ecdh-sha2-nistp256'],
-              cipher: ['aes128-ctr', 'aes256-ctr', 'aes128-gcm@openssh.com', 'aes128-cbc', '3des-cbc'],
-              serverHostKey: ['ssh-ed25519', 'rsa-sha2-512', 'rsa-sha2-256', 'ssh-rsa', 'ecdsa-sha2-nistp256']
+              kex: [
+                'curve25519-sha256',
+                'ecdh-sha2-nistp256',
+                'diffie-hellman-group-exchange-sha256',
+                'diffie-hellman-group14-sha256',
+                'diffie-hellman-group14-sha1',
+                'diffie-hellman-group1-sha1'
+              ],
+              cipher: [
+                'aes128-gcm@openssh.com',
+                'aes256-gcm@openssh.com',
+                'aes128-ctr',
+                'aes192-ctr',
+                'aes256-ctr',
+                'aes128-cbc',
+                'aes256-cbc',
+                '3des-cbc'
+              ],
+              serverHostKey: [
+                'ssh-ed25519',
+                'ecdsa-sha2-nistp256',
+                'rsa-sha2-512',
+                'rsa-sha2-256',
+                'ssh-rsa'
+              ],
+              hmac: [
+                'hmac-sha2-256',
+                'hmac-sha2-512',
+                'hmac-sha1'
+              ]
             }
           });
         }

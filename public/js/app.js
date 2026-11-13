@@ -15,6 +15,12 @@ let activeCategory = 'ALL';
 let activeVendor = 'ALL';
 let searchQuery = '';
 let customSnippets = [];
+let editedCommandsMap = {};
+try {
+  const storedEdits = localStorage.getItem('tracedeck_edited_cmds');
+  if (storedEdits) editedCommandsMap = JSON.parse(storedEdits);
+} catch (e) {}
+
 
 let activeShowCategory = 'ALL';
 let showSearchQuery = '';
@@ -426,7 +432,11 @@ function renderCards() {
         color: 'border-slate-500/30 text-slate-300 bg-slate-800/40' 
       };
 
-      const rawCmdLines = (vData.cmds || []).map(cmd => replaceParams(cmd, vKey));
+      const editKey = `${task.id}_${vKey}`;
+      const hasSavedEdit = Object.prototype.hasOwnProperty.call(editedCommandsMap, editKey);
+      const rawCmdLines = hasSavedEdit
+        ? String(editedCommandsMap[editKey]).split('\n')
+        : (vData.cmds || []).map(cmd => replaceParams(cmd, vKey));
       const fullCmdText = rawCmdLines.join('\n');
 
       const formattedCmdLines = rawCmdLines.map(line => {
@@ -437,13 +447,14 @@ function renderCards() {
       }).join('\n');
 
       vendorBlocksHtml += `
-        <div class="vendor-cmd-block bg-slate-950/80 border border-slate-800 rounded-lg p-3.5 flex flex-col justify-between group/cmd hover:border-slate-700 transition">
+        <div class="vendor-cmd-block bg-slate-950/80 border border-slate-800 rounded-lg p-3.5 flex flex-col justify-between group/cmd hover:border-slate-700 transition" data-edit-key="${escapeAttr(editKey)}">
           <div>
             <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/60 gap-2">
               <span class="text-xs font-semibold px-2 py-0.5 rounded border ${vInfo.color} truncate">
-                ${escapeHtml(vInfo.name)}
+                ${escapeHtml(vInfo.name)} ${hasSavedEdit ? '<span class="text-[9px] text-amber-400 font-bold ml-1">(Đã sửa)</span>' : ''}
               </span>
               <div class="flex items-center gap-1.5 shrink-0">
+                ${hasSavedEdit ? `<button type="button" class="btn-reset-vendor px-2 py-1 text-[11px] font-medium rounded bg-slate-800 hover:bg-rose-600 hover:text-white text-amber-300 transition" title="Khôi phục lệnh gốc">↺ Gốc</button>` : ''}
                 <button 
                   type="button"
                   class="btn-edit-vendor px-2 py-1 text-[11px] font-medium rounded bg-slate-800 hover:bg-amber-600 hover:text-white text-slate-300 transition flex items-center gap-1"
@@ -533,14 +544,26 @@ function renderCards() {
         editBtn.classList.add('bg-emerald-600', 'text-white');
         editBtn.querySelector('span').textContent = 'Xong';
       } else {
-        pre.textContent = editor.value;
-        if (copyBtn) copyBtn.setAttribute('data-copy', editor.value);
-        editor.classList.add('hidden');
-        pre.classList.remove('hidden');
-        editBtn.classList.remove('bg-emerald-600', 'text-white');
-        editBtn.classList.add('bg-slate-800', 'hover:bg-amber-600', 'text-slate-300');
-        editBtn.querySelector('span').textContent = 'Sửa';
-        showToast('Đã lưu chỉnh sửa câu lệnh mẫu!');
+        const editKey = block.getAttribute('data-edit-key');
+        if (editKey) {
+          editedCommandsMap[editKey] = editor.value;
+          try { localStorage.setItem('tracedeck_edited_cmds', JSON.stringify(editedCommandsMap)); } catch (e) {}
+        }
+        renderCards();
+        showToast('Đã lưu chỉnh sửa câu lệnh mẫu vào bộ nhớ trình duyệt!');
+      }
+    });
+  });
+
+  document.querySelectorAll('.btn-reset-vendor').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const block = btn.closest('.vendor-cmd-block');
+      const editKey = block?.getAttribute('data-edit-key');
+      if (editKey && editedCommandsMap[editKey] !== undefined) {
+        delete editedCommandsMap[editKey];
+        try { localStorage.setItem('tracedeck_edited_cmds', JSON.stringify(editedCommandsMap)); } catch (e) {}
+        renderCards();
+        showToast('↺ Đã khôi phục câu lệnh gốc!');
       }
     });
   });
@@ -2336,7 +2359,7 @@ function initDiagnosticAssistant() {
       showToast('Hãy mở Terminal kết nối trước khi gửi lệnh!');
       return;
     }
-    const v = document.getElementById('mac-trace-vendor')?.value || 'cisco';
+    const v = detectVendorFromLog(termLogBuffer, 'AUTO');
     let cmd = 'terminal length 0\nshow running-config\nshow interfaces\n';
     if (v === 'huawei') cmd = 'screen-length 0 temporary\ndisplay current-configuration\ndisplay interface brief\n';
     else if (v === 'ciscocbs') cmd = 'terminal datadump\nshow running-config\nshow interfaces status\n';
@@ -2355,7 +2378,7 @@ function initDiagnosticAssistant() {
     }
     const textarea = document.getElementById('diag-raw-input');
     if (textarea) textarea.value = cleanLog;
-    const hintedVendor = document.getElementById('mac-trace-vendor')?.value || 'AUTO';
+    const hintedVendor = 'AUTO';
     renderAuditReport(buildSmartAudit(cleanLog, hintedVendor));
     showToast('Đã đẩy toàn bộ log từ Terminal sang AI Chẩn Đoán!');
   });
@@ -2367,7 +2390,7 @@ function initDiagnosticAssistant() {
     const port = portInput?.value.trim() || (protocol === 'TELNET' ? '23' : '22');
     const username = document.getElementById('ssh-target-user')?.value.trim();
     const password = document.getElementById('ssh-target-pass')?.value;
-    const vendor = document.getElementById('mac-trace-vendor')?.value || 'AUTO';
+    const vendor = 'AUTO';
 
     if (!host || !username || !password) {
       showToast('Vui lòng nhập đầy đủ IP, Tài khoản và Mật khẩu SSH/Telnet!');
@@ -2425,6 +2448,107 @@ function initDiagnosticAssistant() {
   document.getElementById('btn-copy-optimizer-script')?.addEventListener('click', () => {
     if (currentOptimizerScript) {
       copyText(currentOptimizerScript, document.getElementById('btn-copy-optimizer-script'));
+    }
+  });
+
+  // Live Terminal Auto-Detect MAC Address Port Tracer (with Anti-Paging)
+  document.getElementById('btn-run-mac-trace')?.addEventListener('click', async () => {
+    const rawMac = document.getElementById('mac-trace-input')?.value.trim();
+    const mac = normalizeMacFormats(rawMac);
+    const resBox = document.getElementById('mac-trace-result');
+
+    if (!mac) {
+      showToast('Địa chỉ MAC không hợp lệ! Vui lòng nhập đủ 12 ký tự Hex (VD: 00:1a:2b:3c:4d:5e).');
+      return;
+    }
+
+    // Mode 1: Query directly inside active Live Terminal session (Auto-detects vendor + disables paging)
+    if (termWs && termWs.readyState === WebSocket.OPEN) {
+      const detectedVendor = detectVendorFromLog(termLogBuffer, 'AUTO');
+      const disablePaging = {
+        cisco: 'terminal length 0',
+        ciscocbs: 'terminal datadump',
+        huawei: 'screen-length 0 temporary',
+        aruba: 'no page',
+        juniper: 'set cli screen-length 0'
+      }[detectedVendor] || '';
+
+      const lookupCmd = getMacLookupCmd(detectedVendor, mac);
+      const startIdx = termLogBuffer.length;
+      const payload = (disablePaging ? `${disablePaging}\n` : '') + `${lookupCmd}\n`;
+
+      termWs.send(JSON.stringify({ type: 'input', data: payload }));
+      if (term) term.focus();
+
+      if (resBox) {
+        resBox.classList.remove('hidden');
+        resBox.innerHTML = `<div class="p-3 rounded-lg bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 text-xs">⏳ Đang truy vấn bảng MAC trực tiếp trên phiên Terminal (Auto-Detect: <strong>${escapeHtml(detectedVendor.toUpperCase())}</strong>)...</div>`;
+      }
+
+      setTimeout(() => {
+        const cleanSlice = termLogBuffer.slice(startIdx).replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+        const matches = parseMacTraceOutput(cleanSlice, mac);
+        if (!resBox) return;
+        if (matches.length === 0) {
+          resBox.innerHTML = `
+            <div class="p-3 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs space-y-1">
+              <div>⚠️ Không tìm thấy MAC <strong class="font-mono">${escapeHtml(mac.colon)}</strong> trong MAC Table (Hãng nhận diện: <strong>${escapeHtml(detectedVendor.toUpperCase())}</strong>).</div>
+              <div class="text-[11px] text-slate-400">Lệnh đã chạy: <code class="text-emerald-300">${escapeHtml(lookupCmd)}</code> (Kiểm tra lại thiết bị đầu cuối có đang phát gói tin hoặc xem trực tiếp output trên Terminal).</div>
+            </div>`;
+        } else {
+          resBox.innerHTML = matches.map(m => `
+            <div class="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-xs flex flex-wrap items-center justify-between gap-2">
+              <div class="space-y-0.5">
+                <div>✅ Phát hiện trên cổng <strong class="text-emerald-400 font-mono text-sm">${escapeHtml(m.port)}</strong> &bull; VLAN <strong>${escapeHtml(m.vlan)}</strong> <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">${escapeHtml(m.type)}</span></div>
+                ${m.isUplink ? '<div class="text-amber-300 text-[11px]">⚠️ Cổng này là <strong>Uplink / Trunk / Port-Channel</strong> — hãy SSH tiếp sang Switch nối với cổng này để tìm cổng Access cuối cùng.</div>' : '<div class="text-emerald-300/80 text-[11px]">🎯 Đây là cổng Access cắm trực tiếp thiết bị đầu cuối.</div>'}
+              </div>
+              <button type="button" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition" onclick="copyText('${escapeAttr(m.port)}', this)">Copy Port</button>
+            </div>
+          `).join('');
+        }
+      }, 1800);
+      return;
+    }
+
+    // Mode 2: Fallback one-shot SSH/Telnet query if Terminal is not open yet
+    const host = document.getElementById('ssh-target-ip')?.value.trim();
+    const protocol = protoSelect?.value || 'SSH';
+    const port = portInput?.value.trim() || (protocol === 'TELNET' ? '23' : '22');
+    const username = document.getElementById('ssh-target-user')?.value.trim();
+    const password = document.getElementById('ssh-target-pass')?.value;
+
+    if (!host || !username || !password) {
+      showToast('Hãy bấm "Mở Terminal (SSH / Telnet)" hoặc nhập đủ IP, Tài khoản, Mật khẩu để dò MAC!');
+      return;
+    }
+
+    if (resBox) {
+      resBox.classList.remove('hidden');
+      resBox.innerHTML = `<div class="p-3 rounded-lg bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 text-xs">⏳ Đang kết nối ${escapeHtml(protocol)} tới ${escapeHtml(host)} để dò MAC <strong>${escapeHtml(mac.colon)}</strong>...</div>`;
+    }
+
+    try {
+      const resp = await fetch('/api/diagnose/mac-trace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ protocol, host, port, username, password, vendor: 'cisco', macAddress: rawMac })
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.success) throw new Error(data.error || 'Dò MAC thất bại!');
+      if (!data.matches || data.matches.length === 0) {
+        resBox.innerHTML = `<div class="p-3 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs">⚠️ Không tìm thấy MAC <strong>${escapeHtml(mac.colon)}</strong> trên ${escapeHtml(host)}.</div>`;
+      } else {
+        resBox.innerHTML = data.matches.map(m => `
+          <div class="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-xs flex items-center justify-between gap-2">
+            <div>✅ Cổng <strong class="text-emerald-400 font-mono text-sm">${escapeHtml(m.port)}</strong> &bull; VLAN <strong>${escapeHtml(m.vlan)}</strong> (${escapeHtml(m.type)})</div>
+            <button type="button" class="px-2.5 py-1 rounded bg-emerald-600 text-white text-[11px] font-bold" onclick="copyText('${escapeAttr(m.port)}', this)">Copy Port</button>
+          </div>
+        `).join('');
+      }
+    } catch (err) {
+      if (resBox) {
+        resBox.innerHTML = `<div class="p-3 rounded-lg bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs">❌ <strong>Lỗi:</strong> ${escapeHtml(err.message)}</div>`;
+      }
     }
   });
 }
@@ -2948,60 +3072,8 @@ function execSshCommands({ host, port, username, password, commands }) {
   });
 }
 
-router.post('/diagnose/live-probe', async (req, res) => {
-  const { protocol, host, port, username, password, vendor } = req.body || {};
-  const proto = String(protocol || 'SSH').toUpperCase();
-  if (!['SSH', 'TELNET'].includes(proto)) {
-    return res.status(400).json({ success: false, error: 'Giao thức không hợp lệ (chỉ hỗ trợ SSH hoặc TELNET).' });
-  }
-  if (!host || !username || !password) {
-    return res.status(400).json({ success: false, error: 'Vui lòng nhập đầy đủ IP thiết bị, Username và Password.' });
-  }
-  const vKey = vendor && vendor !== 'AUTO' ? vendor : 'cisco';
-  const cmds = getLiveProbeCommands(vKey);
-  try {
-    const rawOutput = proto === 'TELNET'
-      ? await execTelnetCommands({ host, port: port || 23, username, password, commands: cmds })
-      : await execSshCommands({ host, port: port || 22, username, password, commands: cmds });
-    const audit = buildSmartAudit(rawOutput, vendor || 'AUTO');
-    res.json({ success: true, protocol: proto, host, rawOutput, audit });
-  } catch (err) {
-    res.status(401).json({ success: false, error: err.message || 'Kết nối tới thiết bị thất bại.' });
-  }
-});
-
-router.post('/diagnose/mac-trace', async (req, res) => {
-  const { protocol, host, port, username, password, vendor, macAddress } = req.body || {};
-  const proto = String(protocol || '').toUpperCase();
-  if (!['SSH', 'TELNET'].includes(proto)) {
-    return res.status(400).json({ success: false, error: 'Tính năng dò cổng theo MAC bắt buộc phải kết nối trực tiếp qua SSH hoặc Telnet vào thiết bị.' });
-  }
-  if (!host || !username || !password) {
-    return res.status(400).json({ success: false, error: 'Vui lòng nhập đầy đủ IP thiết bị, Username và Password SSH/Telnet.' });
-  }
-  const mac = normalizeMacFormats(macAddress);
-  if (!mac) {
-    return res.status(400).json({ success: false, error: 'Địa chỉ MAC không hợp lệ. Vui lòng nhập đủ 12 ký tự Hex (VD: aa:bb:cc:dd:ee:ff).' });
-  }
-
-  const vKey = vendor || 'cisco';
-  const lookupCmd = getMacLookupCmd(vKey, mac);
-  const cmds = vKey === 'mikrotik' || vKey === 'fortinet' ? [lookupCmd] : ['terminal length 0', lookupCmd];
-
-  try {
-    const rawOutput = proto === 'TELNET'
-      ? await execTelnetCommands({ host, port: port || 23, username, password, commands: cmds })
-      : await execSshCommands({ host, port: port || 22, username, password, commands: cmds });
-
-    const matches = parseMacTraceOutput(rawOutput, mac);
-    res.json({ success: true, protocol: proto, host, vendor: vKey, macFormats: mac, commandExecuted: lookupCmd, matches, rawOutput });
-  } catch (err) {
-    res.status(401).json({ success: false, error: err.message || 'Không thể kết nối tới thiết bị.', commandExecuted: lookupCmd });
-  }
-});
-
 function fallbackClientAudit(text, protocol, ip) {
-  const hintedVendor = document.getElementById('mac-trace-vendor')?.value || 'AUTO';
+  const hintedVendor = 'AUTO';
   return buildSmartAudit(text, hintedVendor);
 }
 
