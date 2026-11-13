@@ -26,7 +26,7 @@
         "cmds": [
           "configure",
           "voice vlan id 20",
-          "interface ge1",
+          "interface {{ACCESS_PORT}}",
           " switchport mode general",
           " switchport general allowed vlan add {{VLAN_ID}} untagged",
           " switchport general allowed vlan add 20 tagged",
@@ -158,7 +158,7 @@
           "configure",
           "ip dhcp snooping",
           "ip dhcp snooping vlan {{VLAN_ID}}",
-          "interface ge24",
+          "interface {{TRUNK_PORT}}",
           " ip dhcp snooping trust",
           "exit"
         ],
@@ -577,7 +577,7 @@
       "ciscocbs": {
         "cmds": [
           "configure",
-          "interface ge1",
+          "interface {{ACCESS_PORT}}",
           " switchport mode access",
           " switchport access vlan {{VLAN_ID}}",
           " no shutdown",
@@ -692,7 +692,7 @@
       "ciscocbs": {
         "cmds": [
           "configure",
-          "interface ge24",
+          "interface {{TRUNK_PORT}}",
           " switchport mode trunk",
           " switchport trunk allowed vlan add {{VLAN_ID}}",
           " no shutdown",
@@ -807,7 +807,7 @@
           "configure",
           "spanning-tree mode rstp",
           "spanning-tree priority 4096",
-          "interface ge1",
+          "interface {{ACCESS_PORT}}",
           " spanning-tree bpduguard enable",
           "exit"
         ],
@@ -922,7 +922,7 @@
       "ciscocbs": {
         "cmds": [
           "configure",
-          "interface range ge1-2",
+          "interface range gi1/0/1-2",
           " channel-group {{LAG_ID}} mode auto",
           "exit",
           "interface Port-Channel {{LAG_ID}}",
@@ -3113,8 +3113,8 @@
       "ciscocbs": {
         "cmds": [
           "configure",
-          "port monitor ge24",
-          "port monitor source ge1 rx/tx",
+          "port monitor {{TRUNK_PORT}}",
+          "port monitor source {{ACCESS_PORT}} rx/tx",
           "exit"
         ],
         "note": "Port Mirroring ra cổng ge24 để cắm laptop chạy Wireshark."

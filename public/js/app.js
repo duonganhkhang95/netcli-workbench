@@ -153,9 +153,104 @@ function getParams() {
   };
 }
 
-function replaceParams(cmdStr) {
+function getStackSettings() {
+  const isStack = document.getElementById('param-stack-mode')?.value === 'stack';
+  const unit = Math.max(1, parseInt(document.getElementById('param-stack-unit')?.value, 10) || 1);
+  return { isStack, unit };
+}
+
+function getVendorSinglePort(vKey, portNum, isStack, unit) {
+  const u = isStack ? unit : 0;
+  switch (vKey) {
+    case 'cisco':
+      return isStack ? `GigabitEthernet${unit}/0/${portNum}` : `GigabitEthernet0/${portNum}`;
+    case 'ciscocbs':
+      return isStack ? `gi${unit}/0/${portNum}` : `gi1/0/${portNum}`;
+    case 'juniper':
+      return isStack ? `ge-${unit - 1}/0/${portNum}` : `ge-0/0/${portNum}`;
+    case 'huawei':
+      return isStack ? `GigabitEthernet${unit}/0/${portNum}` : `GigabitEthernet0/0/${portNum}`;
+    case 'aruba':
+      return isStack ? `${unit}/1/${portNum}` : `1/1/${portNum}`;
+    case 'ruijie':
+      return isStack ? `GigabitEthernet ${unit}/0/${portNum}` : `GigabitEthernet 0/${portNum}`;
+    case 'edgecore':
+      return isStack ? `Ethernet ${unit}/${portNum}` : `Ethernet 1/${portNum}`;
+    case 'mikrotik':
+      return portNum === 24 ? 'sfp-sfpplus1' : `ether${portNum}`;
+    case 'fortinet':
+      return `port${portNum === 24 ? 2 : portNum}`;
+    case 'draytek':
+      return `P${portNum === 24 ? 2 : portNum}`;
+    default:
+      return isStack ? `gi${unit}/0/${portNum}` : `GigabitEthernet0/${portNum}`;
+  }
+}
+
+function buildVendorPortRange(vKey, startPort, endPort) {
+  const s = Math.max(1, parseInt(startPort, 10) || 1);
+  const e = Math.max(s, parseInt(endPort, 10) || s);
+  const { isStack, unit } = getStackSettings();
+  switch (vKey) {
+    case 'cisco':
+      return isStack ? `range GigabitEthernet${unit}/0/${s} - ${e}` : `range GigabitEthernet0/${s} - ${e}`;
+    case 'ciscocbs':
+      return isStack ? `range gi${unit}/0/${s}-${e}` : `range gi1/0/${s}-${e}`;
+    case 'aruba':
+      return isStack ? `${unit}/1/${s}-${unit}/1/${e}` : `1/1/${s}-1/1/${e}`;
+    case 'ruijie':
+      return isStack ? `range GigabitEthernet ${unit}/0/${s}-${e}` : `range GigabitEthernet 0/${s}-${e}`;
+    case 'edgecore':
+      return isStack ? `ethernet ${unit}/${s}-${e}` : `ethernet 1/${s}-${e}`;
+    case 'huawei':
+      return isStack
+        ? `GigabitEthernet${unit}/0/${s} to GigabitEthernet${unit}/0/${e}`
+        : `GigabitEthernet0/0/${s} to GigabitEthernet0/0/${e}`;
+    case 'juniper':
+      return isStack ? `ge-${unit - 1}/0/${s}..ge-${unit - 1}/0/${e}` : `ge-0/0/${s}..ge-0/0/${e}`;
+    case 'mikrotik':
+      return `ether${s}..ether${e}`;
+    case 'fortinet':
+      return `port${s}-port${e}`;
+    case 'draytek':
+      return `P${s}-P${e}`;
+    default:
+      return `${s}-${e}`;
+  }
+}
+
+function replaceParams(cmdStr, vKey = '') {
   const params = getParams();
+  const { isStack, unit } = getStackSettings();
+  const rangeEnabled = document.getElementById('param-range-enable')?.checked;
+
+  // If Stack Mode is explicitly enabled and a vendor key is known, adapt single ports to that vendor's stack unit syntax
+  if (isStack && vKey && !rangeEnabled) {
+    const apVal = document.getElementById('param-access-port')?.value || '';
+    const tpVal = document.getElementById('param-trunk-port')?.value || '';
+    const apNum = (apVal.match(/(\d+)$/) || [null, '1'])[1];
+    const tpNum = (tpVal.match(/(\d+)$/) || [null, '24'])[1];
+    params['{{ACCESS_PORT}}'] = getVendorSinglePort(vKey, parseInt(apNum, 10), true, unit);
+    params['{{TRUNK_PORT}}'] = getVendorSinglePort(vKey, parseInt(tpNum, 10), true, unit);
+  } else if (rangeEnabled) {
+    const rStart = document.getElementById('param-range-start')?.value || '1';
+    const rEnd = document.getElementById('param-range-end')?.value || '24';
+    params['{{ACCESS_PORT}}'] = buildVendorPortRange(vKey, rStart, rEnd);
+    if (isStack && vKey) {
+      const tpVal = document.getElementById('param-trunk-port')?.value || '';
+      const tpNum = (tpVal.match(/(\d+)$/) || [null, '24'])[1];
+      params['{{TRUNK_PORT}}'] = getVendorSinglePort(vKey, parseInt(tpNum, 10), true, unit);
+    }
+  }
+
   let res = cmdStr;
+  // Special Huawei port-group syntax when range mode is active on "interface {{ACCESS_PORT}}"
+  if (rangeEnabled && vKey === 'huawei' && res.trim().startsWith('interface {{ACCESS_PORT}}')) {
+    const rStart = document.getElementById('param-range-start')?.value || '1';
+    const rEnd = document.getElementById('param-range-end')?.value || '24';
+    const prefix = isStack ? `GigabitEthernet${unit}/0` : 'GigabitEthernet0/0';
+    res = res.replace('interface {{ACCESS_PORT}}', `port-group group-member ${prefix}/${rStart} to ${prefix}/${rEnd}`);
+  }
   for (const [k, v] of Object.entries(params)) {
     res = res.split(k).join(v);
   }
@@ -331,7 +426,7 @@ function renderCards() {
         color: 'border-slate-500/30 text-slate-300 bg-slate-800/40' 
       };
 
-      const rawCmdLines = (vData.cmds || []).map(cmd => replaceParams(cmd));
+      const rawCmdLines = (vData.cmds || []).map(cmd => replaceParams(cmd, vKey));
       const fullCmdText = rawCmdLines.join('\n');
 
       const formattedCmdLines = rawCmdLines.map(line => {
@@ -342,21 +437,33 @@ function renderCards() {
       }).join('\n');
 
       vendorBlocksHtml += `
-        <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-3.5 flex flex-col justify-between group/cmd hover:border-slate-700 transition">
+        <div class="vendor-cmd-block bg-slate-950/80 border border-slate-800 rounded-lg p-3.5 flex flex-col justify-between group/cmd hover:border-slate-700 transition">
           <div>
-            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/60">
-              <span class="text-xs font-semibold px-2 py-0.5 rounded border ${vInfo.color}">
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/60 gap-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded border ${vInfo.color} truncate">
                 ${escapeHtml(vInfo.name)}
               </span>
-              <button 
-                class="btn-copy-vendor px-2 py-1 text-[11px] font-medium rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 transition flex items-center gap-1"
-                data-copy="${escapeAttr(fullCmdText)}"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                <span>Copy</span>
-              </button>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button 
+                  type="button"
+                  class="btn-edit-vendor px-2 py-1 text-[11px] font-medium rounded bg-slate-800 hover:bg-amber-600 hover:text-white text-slate-300 transition flex items-center gap-1"
+                  title="Chỉnh sửa trực tiếp câu lệnh này"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                  <span>Sửa</span>
+                </button>
+                <button 
+                  type="button"
+                  class="btn-copy-vendor px-2 py-1 text-[11px] font-medium rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 transition flex items-center gap-1"
+                  data-copy="${escapeAttr(fullCmdText)}"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
             </div>
-            <pre class="code-font text-xs text-slate-200 overflow-x-auto p-2.5 rounded bg-slate-900 border border-slate-800 select-all leading-relaxed whitespace-pre">${formattedCmdLines}</pre>
+            <pre class="snippet-pre code-font text-xs text-slate-200 overflow-x-auto p-2.5 rounded bg-slate-900 border border-slate-800 select-all leading-relaxed whitespace-pre">${formattedCmdLines}</pre>
+            <textarea class="snippet-editor hidden w-full p-2.5 text-xs code-font bg-slate-950 text-amber-300 rounded border border-amber-500/50 focus:outline-none leading-relaxed resize-y" rows="5">${escapeHtml(fullCmdText)}</textarea>
           </div>
           ${vData.note ? `
             <div class="mt-2 text-[11px] text-slate-400 flex items-start gap-1.5 pt-1">
@@ -405,9 +512,45 @@ function renderCards() {
     emptyState.classList.add('hidden');
   }
 
+  document.querySelectorAll('.btn-edit-vendor').forEach(editBtn => {
+    editBtn.addEventListener('click', () => {
+      const block = editBtn.closest('.vendor-cmd-block');
+      if (!block) return;
+      const pre = block.querySelector('.snippet-pre');
+      const editor = block.querySelector('.snippet-editor');
+      const copyBtn = block.querySelector('.btn-copy-vendor');
+      if (!pre || !editor) return;
+
+      const isEditing = !editor.classList.contains('hidden');
+      if (!isEditing) {
+        editor.value = pre.textContent;
+        const lines = editor.value.split('\n').length;
+        editor.rows = Math.max(4, Math.min(18, lines + 1));
+        pre.classList.add('hidden');
+        editor.classList.remove('hidden');
+        editor.focus();
+        editBtn.classList.remove('bg-slate-800', 'hover:bg-amber-600', 'text-slate-300');
+        editBtn.classList.add('bg-emerald-600', 'text-white');
+        editBtn.querySelector('span').textContent = 'Xong';
+      } else {
+        pre.textContent = editor.value;
+        if (copyBtn) copyBtn.setAttribute('data-copy', editor.value);
+        editor.classList.add('hidden');
+        pre.classList.remove('hidden');
+        editBtn.classList.remove('bg-emerald-600', 'text-white');
+        editBtn.classList.add('bg-slate-800', 'hover:bg-amber-600', 'text-slate-300');
+        editBtn.querySelector('span').textContent = 'Sửa';
+        showToast('Đã lưu chỉnh sửa câu lệnh mẫu!');
+      }
+    });
+  });
+
   document.querySelectorAll('.btn-copy-vendor').forEach(btn => {
     btn.addEventListener('click', () => {
-      copyText(btn.getAttribute('data-copy'), btn);
+      const block = btn.closest('.vendor-cmd-block');
+      const editor = block?.querySelector('.snippet-editor');
+      const text = (editor && !editor.classList.contains('hidden')) ? editor.value : btn.getAttribute('data-copy');
+      copyText(text, btn);
     });
   });
 
@@ -864,20 +1007,23 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCards();
   });
 
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-      e.preventDefault();
-      document.getElementById('nav-btn-generator').click();
-      searchInput.focus();
-    }
-  });
 
-  // Vendor Filter
+
+  // Vendor Filter + Smart Default Port Sync
   const vendorFilter = document.getElementById('vendor-filter');
-  vendorFilter.addEventListener('change', (e) => {
-    activeVendor = e.target.value;
-    renderCards();
-  });
+  if (vendorFilter) {
+    vendorFilter.addEventListener('change', (e) => {
+      activeVendor = e.target.value;
+      const vp = VENDOR_DEFAULT_PORTS[activeVendor];
+      const apInp = document.getElementById('param-access-port');
+      const tpInp = document.getElementById('param-trunk-port');
+      if (vp && apInp && tpInp) {
+        apInp.value = vp.access;
+        tpInp.value = vp.trunk;
+      }
+      renderCards();
+    });
+  }
 
   // Category Tabs
   document.querySelectorAll('.cat-tab').forEach(tab => {
@@ -901,7 +1047,73 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
   paramInputs.forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => renderCards());
+    if (el) {
+      const syncHandler = () => {
+        renderCards();
+      };
+      el.addEventListener('input', syncHandler);
+      el.addEventListener('change', syncHandler);
+    }
+  });
+
+  
+  // Stack Mode & Unit ID listeners
+  const stackModeEl = document.getElementById('param-stack-mode');
+  const stackUnitBox = document.getElementById('param-stack-unit-box');
+  const stackUnitEl = document.getElementById('param-stack-unit');
+  if (stackModeEl) {
+    stackModeEl.addEventListener('change', () => {
+      const isStack = stackModeEl.value === 'stack';
+      if (stackUnitBox) stackUnitBox.classList.toggle('hidden', !isStack);
+      const { unit } = getStackSettings();
+      const targetV = activeVendor !== 'ALL' ? activeVendor : 'cisco';
+      const apInp = document.getElementById('param-access-port');
+      const tpInp = document.getElementById('param-trunk-port');
+      if (apInp && tpInp) {
+        apInp.value = getVendorSinglePort(targetV, 1, isStack, unit);
+        tpInp.value = getVendorSinglePort(targetV, 24, isStack, unit);
+      }
+      renderCards();
+    });
+  }
+  if (stackUnitEl) {
+    const updateUnit = () => {
+      const { isStack, unit } = getStackSettings();
+      const targetV = activeVendor !== 'ALL' ? activeVendor : 'cisco';
+      const apInp = document.getElementById('param-access-port');
+      const tpInp = document.getElementById('param-trunk-port');
+      if (isStack && apInp && tpInp) {
+        apInp.value = getVendorSinglePort(targetV, 1, true, unit);
+        tpInp.value = getVendorSinglePort(targetV, 24, true, unit);
+      }
+      renderCards();
+    };
+    stackUnitEl.addEventListener('input', updateUnit);
+    stackUnitEl.addEventListener('change', updateUnit);
+  }
+
+  // Range Port Mode listeners
+  const rangeToggle = document.getElementById('param-range-enable');
+  const rangeBox = document.getElementById('param-range-inputs');
+  const rangeStart = document.getElementById('param-range-start');
+  const rangeEnd = document.getElementById('param-range-end');
+  if (rangeToggle) {
+    rangeToggle.addEventListener('change', () => {
+      if (rangeBox) {
+        if (rangeToggle.checked) {
+          rangeBox.classList.remove('opacity-50', 'pointer-events-none');
+        } else {
+          rangeBox.classList.add('opacity-50', 'pointer-events-none');
+        }
+      }
+      renderCards();
+    });
+  }
+  [rangeStart, rangeEnd].forEach(inp => {
+    if (inp) {
+      inp.addEventListener('input', () => renderCards());
+      inp.addEventListener('change', () => renderCards());
+    }
   });
 
   // Reset params button
@@ -2032,7 +2244,7 @@ async function runAuditDiagnosis(protocol = 'MANUAL', ip = '') {
     const res = await fetch('/api/diagnose/audit-scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ configText: rawText, protocol, ip })
+      body: JSON.stringify({ configText: rawText, protocol, ip, vendor: document.getElementById('diag-oneshot-vendor')?.value || 'AUTO' })
     });
     auditData = await res.json();
   } catch (err) {
@@ -2042,93 +2254,331 @@ async function runAuditDiagnosis(protocol = 'MANUAL', ip = '') {
   renderAuditReport(auditData);
 }
 
-function fallbackClientAudit(text, protocol, ip) {
+function detectVendorFromLog(text, hintedVendor) {
+  if (hintedVendor && hintedVendor !== 'AUTO') return hintedVendor;
+  if (/\/interface|\/ip address|RouterOS|sfp-sfpplus/i.test(text)) return 'mikrotik';
+  if (/config system global|config firewall policy|FortiGate/i.test(text)) return 'fortinet';
+  if (/sysname\s+|system-view|display\s+current|GigabitEthernet0\/0\/|bpdu-protection/i.test(text)) return 'huawei';
+  if (/set system host-name|set interfaces\s+ge-|commit/i.test(text)) return 'juniper';
+  if (/gi\d+\/0\/\d+|switchport general|terminal datadump/i.test(text)) return 'ciscocbs';
+  if (/1\/1\/\d+|AOS-CX|spanning-tree bpdu-guard/i.test(text)) return 'aruba';
+  if (/Ruijie|RGOS/i.test(text)) return 'ruijie';
+  return 'cisco';
+}
+
+function scanPhysicalAndCableHealth(text, vendor) {
+  const lines = text.split(/\r?\n/);
+  let currentIntf = null;
+  const intfRegex = /(GigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+|GigabitEthernet\s+\d+\/\d+|Gi\d+\/\d+\/\d+|Gi\d+\/\d+|gi\d+\/0\/\d+|FastEthernet\d+\/\d+|TenGigabitEthernet\d+\/\d+\/\d+|ge-\d+\/\d+\/\d+|1\/1\/\d+|ether\d+|port\d+)/i;
+
+  const faultyMap = new Map(); // intf -> { crc: 0, inputErr: 0, collisions: 0, halfDuplex: false, lowOptic: null }
+  const ensure = (name) => {
+    if (!faultyMap.has(name)) faultyMap.set(name, { crc: 0, inputErr: 0, collisions: 0, halfDuplex: false, lowOptic: null });
+    return faultyMap.get(name);
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    // Track current interface block header
+    const intfMatch = line.match(intfRegex);
+    if (intfMatch && (/^(?:interface|Physical interface|name:|GigabitEthernet|Gi\d|gi\d|FastEthernet|TenGigabitEthernet|ge-|1\/1\/|ether\d|port\d)/i.test(line) || /is (?:up|down)/i.test(line))) {
+      currentIntf = intfMatch[1].replace(/\s+/g, ' ');
+    }
+    const targetIntf = currentIntf || (intfMatch ? intfMatch[1] : null) || 'GigabitEthernet0/1';
+
+    // Match BOTH "<num> CRC" AND "CRC: <num>" / "FCS-Err: <num>" / "rx-fcs-error: <num>"
+    const crcPatterns = [
+      /(\d+)\s+(?:CRC|fcs-err(?:ors?)?|rx-fcs-error)/i,
+      /(?:CRC|FCS-Err(?:ors?)?|rx-fcs-error|fcs-errors)\s*[:=]\s*(\d+)/i
+    ];
+    for (const re of crcPatterns) {
+      const m = line.match(re);
+      if (m && parseInt(m[1], 10) > 0) {
+        ensure(targetIntf).crc += parseInt(m[1], 10);
+      }
+    }
+
+    // Match Input Errors / Rcv-Err in both orders
+    const inErrPatterns = [
+      /(\d+)\s+(?:input errors|rcv-err)/i,
+      /(?:input errors|rcv-err)\s*[:=]\s*(\d+)/i
+    ];
+    for (const re of inErrPatterns) {
+      const m = line.match(re);
+      if (m && parseInt(m[1], 10) > 0) {
+        ensure(targetIntf).inputErr += parseInt(m[1], 10);
+      }
+    }
+
+    // Match Collisions / Late Collisions / Runts
+    const colPatterns = [
+      /(\d+)\s+(?:late collision|collisions|runts|giants)/i,
+      /(?:late collisions?|collisions|runts)\s*[:=]\s*(\d+)/i
+    ];
+    for (const re of colPatterns) {
+      const m = line.match(re);
+      if (m && parseInt(m[1], 10) > 0) {
+        ensure(targetIntf).collisions += parseInt(m[1], 10);
+      }
+    }
+
+    // Detect Half-Duplex (classic cable / negotiation fault)
+    if (/half-duplex|duplex:\s*half/i.test(line)) {
+      ensure(targetIntf).halfDuplex = true;
+    }
+
+    // Detect Optical Rx Power Danger (<= -21.0 dBm)
+    const rxMatch = line.match(/(?:Rx\s*Power|Receive\s*Power|rx-power)\s*[:=]?\s*(-\d+(?:\.\d+)?)\s*dBm/i);
+    if (rxMatch && parseFloat(rxMatch[1]) <= -21.0) {
+      ensure(targetIntf).lowOptic = parseFloat(rxMatch[1]);
+    }
+  }
+
+  return Array.from(faultyMap.entries()).map(([intf, stats]) => ({ intf, ...stats }));
+}
+
+function extractFaultyInterface(text, vendor) {
+  const physicalFaults = scanPhysicalAndCableHealth(text, vendor);
+  if (physicalFaults.length > 0) return physicalFaults[0].intf;
+  const m = text.match(/(GigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+|Gi\d+\/\d+\/\d+|Gi\d+\/\d+|gi\d+\/0\/\d+|ge-\d+\/\d+\/\d+|1\/1\/\d+|ether\d+|port\d+)/i);
+  if (m) return m[1];
+  const defaults = {
+    cisco: 'GigabitEthernet0/1', ciscocbs: 'gi1/0/1', huawei: 'GigabitEthernet0/0/1',
+    juniper: 'ge-0/0/1', aruba: '1/1/1', ruijie: 'GigabitEthernet 0/1', mikrotik: 'ether1', fortinet: 'port1'
+  };
+  return defaults[vendor] || 'GigabitEthernet0/1';
+}
+
+function buildSmartAudit(configText, vendorHint) {
+  const text = configText || '';
+  const v = detectVendorFromLog(text, vendorHint);
+  const physicalFaults = scanPhysicalAndCableHealth(text, v);
+  const faultyIntf = extractFaultyInterface(text, v);
   const issues = [];
   const verifiedGood = [];
   let score = 100;
 
-  if (text.match(/(\d+)\s+(?:CRC|input errors)/i)) {
-    score -= 25;
-    issues.push({
-      severity: 'critical',
-      category: 'Lớp Vật Lý & Cáp',
-      title: 'Phát hiện lỗi cáp truyền dẫn CRC Errors',
-      symptom: 'Rớt gói ngẫu nhiên, suy hao chất lượng truyền tải.',
-      rootCause: 'Bấm đầu hạt mạng RJ45 lỏng hoặc cáp mạng đi gần dây điện 3 pha gây nhiễu.',
-      fixScript: 'interface GigabitEthernet0/1\n shutdown\n no shutdown\n clear counters GigabitEthernet0/1\nexit',
-      recommendation: 'Bấm lại đầu mạng RJ45 Cat6 chuẩn và gõ clear counters để theo dõi lại.'
+  const hasCrc = physicalFaults.length > 0;
+  const crcCount = physicalFaults.reduce((sum, f) => sum + f.crc + f.inputErr + f.collisions, 0);
+  if (hasCrc) {
+    score -= Math.min(35, 15 + physicalFaults.length * 10);
+    physicalFaults.forEach(pf => {
+      const detailParts = [];
+      if (pf.crc > 0) detailParts.push(`${pf.crc} CRC/FCS`);
+      if (pf.inputErr > 0) detailParts.push(`${pf.inputErr} Input Errors`);
+      if (pf.collisions > 0) detailParts.push(`${pf.collisions} Collisions/Runts`);
+      if (pf.halfDuplex) detailParts.push('Half-Duplex');
+      if (pf.lowOptic !== null) detailParts.push(`Quang yếu ${pf.lowOptic} dBm`);
+
+      let fixScript = '';
+      if (v === 'huawei') {
+        fixScript = `interface ${pf.intf}\n` + (pf.halfDuplex ? ' undo negotiation auto\n duplex full\n' : '') + ` shutdown\n undo shutdown\nquit`;
+      } else if (v === 'juniper') {
+        fixScript = `set interfaces ${pf.intf} disable\ndelete interfaces ${pf.intf} disable`;
+      } else if (v === 'mikrotik') {
+        fixScript = `/interface ethernet disable [find name="${pf.intf}"]\n/interface ethernet enable [find name="${pf.intf}"]`;
+      } else if (v === 'fortinet') {
+        fixScript = `config system interface\n edit "${pf.intf}"\n  set status down\n  set status up\n next\nend`;
+      } else {
+        fixScript = `interface ${pf.intf}\n` + (pf.halfDuplex ? ' duplex full\n speed 1000\n' : '') + ` shutdown\n no shutdown\nexit`;
+      }
+
+      issues.push({
+        severity: 'critical',
+        category: 'Cáp & Cổng Mạng',
+        title: `Lỗi vật lý / cáp tại ${pf.intf} (${detailParts.join(', ')})`,
+        location: pf.intf,
+        symptom: pf.lowOptic !== null
+          ? `Tín hiệu quang thu yếu (${pf.lowOptic} dBm <= -21 dBm), dễ rớt gói và đứt kết nối.`
+          : 'Mạng không ổn định, rớt gói tin, tốc độ sụt giảm hoặc đứt kết nối ngắt quãng.',
+        rootCause: pf.halfDuplex
+          ? 'Lệch chế độ Duplex (Half-Duplex) hoặc bấm thiếu cặp dây (chỉ ăn 4 sợi).'
+          : 'Đầu bấm RJ45 lỏng/oxy hóa, cáp hỏng, nhiễu điện từ hoặc suy hao module quang.',
+        fixScript,
+        execPostCmd: (v === 'cisco' || v === 'aruba' || v === 'ruijie') ? `clear counters ${pf.intf}` : (v === 'huawei' ? `reset counters interface ${pf.intf}` : ''),
+        recommendation: pf.lowOptic !== null
+          ? `Vệ sinh đầu dây nhảy quang / kiểm tra mối hàn hoặc thay module SFP tại ${pf.intf}.`
+          : `Kiểm tra và bấm lại đầu RJ45 (hoặc thay dây nhảy Cat6) tại cổng ${pf.intf}.`
+      });
     });
   } else {
-    verifiedGood.push('Bộ đếm lỗi CRC & Input Errors trên toàn bộ các cổng = 0 (Truyền dẫn vật lý hoàn hảo).');
+    verifiedGood.push('Tín hiệu truyền dẫn vật lý tốt (0 lỗi CRC, Input Errors, Collisions hay Half-Duplex).');
   }
 
-  if (text.match(/err-disabled|MACFLAP_NOTIF/i)) {
+  const hasLoop = /err-disabled|MACFLAP_NOTIF|mac-move|loop-detect|bpduguard.*triggered/i.test(text);
+  if (hasLoop) {
     score -= 30;
+    let fixScript = '';
+    if (v === 'cisco') fixScript = `errdisable recovery cause bpduguard\nerrdisable recovery interval 30\ninterface ${faultyIntf}\n shutdown\n no shutdown\nexit`;
+    else if (v === 'ciscocbs') fixScript = `errdisable recovery cause bpdu-guard\nerrdisable recovery interval 30\ninterface ${faultyIntf}\n shutdown\n no shutdown\nexit`;
+    else if (v === 'huawei') fixScript = `error-down auto-recovery cause bpdu-protection interval 30\ninterface ${faultyIntf}\n shutdown\n undo shutdown\nquit`;
+    else if (v === 'aruba') fixScript = `interface ${faultyIntf}\n disable\n enable\nexit`;
+    else if (v === 'mikrotik') fixScript = `/interface bridge port set [find interface="${faultyIntf}"] disabled=yes\n/interface bridge port set [find interface="${faultyIntf}"] disabled=no`;
+    else fixScript = `interface ${faultyIntf}\n shutdown\n no shutdown\nexit`;
+
     issues.push({
       severity: 'critical',
-      category: 'Spanning Tree & Loop L2',
-      title: 'Phát hiện sự cố vòng lặp Loop L2 hoặc Cổng bị Err-Disabled',
-      symptom: 'Cổng mạng bị switch tự ngắt hoặc MAC flapping giữa 2 cổng làm tê liệt mạng.',
-      rootCause: 'Đấu nối vòng tròn giữa các switch hoặc người dùng cắm router WiFi con vào mạng.',
-      fixScript: 'errdisable recovery cause bpduguard\nerrdisable recovery interval 30\ninterface GigabitEthernet0/1\n shutdown\n no shutdown\nexit',
-      recommendation: 'Rút ngay cáp tại cổng bị loop và kích hoạt BPDU Guard / Loop Protect.'
+      category: 'Loop Mạng & Spanning Tree',
+      title: `Phát hiện vòng lặp Loop / Khóa cổng Err-Disabled tại ${faultyIntf}`,
+      location: faultyIntf,
+      symptom: 'Đèn switch nháy liên tục, toàn mạng bị chậm hoặc mất kết nối ngắt quãng.',
+      rootCause: 'Cắm nhầm dây tạo vòng lặp giữa 2 cổng switch hoặc cắm thiết bị gây loop.',
+      fixScript,
+      recommendation: `Rút dây gây vòng lặp tại ${faultyIntf} trước khi mở lại cổng.`
     });
   } else {
-    verifiedGood.push('Trạng thái chuyển mạch Layer 2 ổn định, không có hiện tượng MAC Flapping hay Loop.');
+    verifiedGood.push('Hệ thống chuyển mạch ổn định, không phát hiện vòng lặp Loop.');
   }
 
-  if (!text.match(/bpduguard|bpdu-guard/i)) {
-    score -= 15;
+  const hasBpduGuard = /bpduguard|bpdu-guard|bpdu-protection|edge-port/i.test(text);
+  if (!hasBpduGuard && v !== 'fortinet' && v !== 'mikrotik') {
+    score -= 10;
+    let fixScript = '';
+    if (v === 'cisco') fixScript = 'spanning-tree portfast default\nspanning-tree portfast bpduguard default';
+    else if (v === 'ciscocbs') fixScript = 'spanning-tree mode rstp\nspanning-tree loopback-guard';
+    else if (v === 'huawei') fixScript = 'stp bpdu-protection';
+    else if (v === 'aruba') fixScript = `interface ${faultyIntf}\n spanning-tree bpdu-guard\n spanning-tree port-type admin-edge\nexit`;
+    else if (v === 'juniper') fixScript = 'set protocols rstp interface all edge';
+    else fixScript = 'spanning-tree portfast bpduguard default';
+
     issues.push({
       severity: 'warning',
-      category: 'Bảo Vệ Chuyển Mạch',
-      title: 'Chưa kích hoạt tính năng bảo vệ Spanning Tree BPDU Guard',
-      symptom: 'Nếu nhân viên cắm nhầm switch phụ vào ổ mạng trên tường, switch core có thể bị mất quyền Root Bridge làm sập mạng.',
-      rootCause: 'Thiếu cấu hình bpduguard default trên các cổng Edge/Access.',
-      fixScript: 'spanning-tree portfast bpduguard default\nspanning-tree portfast default',
-      recommendation: 'Bật BPDU Guard toàn cục để switch tự ngắt cổng ngay lập tức nếu có ai cắm switch con lậu.'
+      category: 'Phòng Ngừa Sự Cố',
+      title: 'Chưa bật BPDU Guard bảo vệ chống cắm nhầm Switch/Router phụ',
+      symptom: 'Nếu nhân viên tự ý cắm router WiFi hoặc switch nhỏ gây loop, toàn mạng có thể bị treo.',
+      rootCause: 'Chưa kích hoạt cơ chế BPDU Guard / Protection trên các cổng truy cập.',
+      fixScript,
+      recommendation: 'Bật BPDU Guard để thiết bị tự động cô lập cổng khi phát hiện BPDU lạ.'
     });
   } else {
-    verifiedGood.push('Tính năng bảo vệ Spanning Tree BPDU Guard đã được kích hoạt chuẩn mực.');
+    verifiedGood.push('Đã kích hoạt cơ chế bảo vệ Spanning Tree / BPDU.');
   }
 
-  if (text.match(/transport input telnet/i) || text.match(/snmp-server community public/i)) {
+  const isTelnet = /transport input telnet|telnet server enable|service telnet/i.test(text);
+  const isSnmpPublic = /snmp-server community public|snmp-agent community read public/i.test(text);
+  if (isTelnet || isSnmpPublic) {
     score -= 15;
+    let fixScript = '';
+    if (v === 'cisco' || v === 'ruijie') fixScript = (isTelnet ? 'line vty 0 4\n transport input ssh\nexit\n' : '') + (isSnmpPublic ? 'no snmp-server community public' : '');
+    else if (v === 'ciscocbs') fixScript = (isTelnet ? 'no ip telnet server\nip ssh server\n' : '') + (isSnmpPublic ? 'no snmp-server community public' : '');
+    else if (v === 'huawei') fixScript = (isTelnet ? 'undo telnet server enable\nstelnet server enable\n' : '') + (isSnmpPublic ? 'undo snmp-agent community public' : '');
+    else if (v === 'aruba') fixScript = (isTelnet ? 'no telnet-server\nssh server vrf default\n' : '') + (isSnmpPublic ? 'no snmp-server community public' : '');
+    else if (v === 'mikrotik') fixScript = '/ip service disable telnet\n/ip service enable ssh';
+    else fixScript = 'line vty 0 4\n transport input ssh\nexit';
+
     issues.push({
       severity: 'warning',
-      category: 'An Toàn Thông Tin & Quản Trị',
-      title: 'Tồn tại giao thức quản trị không mã hóa (Telnet / SNMP Public)',
-      symptom: 'Mật khẩu quản trị truyền dưới dạng văn bản rõ (cleartext), hacker có thể bắt gói tin bằng Wireshark.',
-      rootCause: 'Đang mở dịch vụ Telnet hoặc để SNMP community string mặc định là "public".',
-      fixScript: 'line vty 0 4\n transport input ssh\nexit\nno snmp-server community public',
-      recommendation: 'Chỉ cho phép kết nối qua SSH (mã hóa RSA 2048-bit) và tắt hoàn toàn Telnet.'
+      category: 'An Toàn Bảo Mật',
+      title: 'Đang mở giao thức quản trị không mã hóa (Telnet / SNMP public)',
+      symptom: 'Mật khẩu quản trị và thông tin cấu hình truyền dạng văn bản rõ trong mạng LAN.',
+      rootCause: 'Còn bật dịch vụ Telnet cũ hoặc chuỗi SNMP community mặc định "public".',
+      fixScript: fixScript.trim(),
+      recommendation: 'Tắt Telnet, chuyển sang SSH và gỡ bỏ SNMP community mặc định.'
     });
   } else {
-    verifiedGood.push('Quản trị thiết bị an toàn, sử dụng kênh truyền mã hóa bảo mật.');
+    verifiedGood.push('Giao thức quản trị an toàn (không mở Telnet / SNMP mặc định).');
+  }
+
+  const hasNtp = /ntp server|sntp server|ntp-service|system ntp/i.test(text);
+  if (!hasNtp) {
+    score -= 10;
+    let fixScript = '';
+    if (v === 'cisco' || v === 'ruijie') fixScript = 'clock timezone ICT 7 0\nntp server vn.pool.ntp.org';
+    else if (v === 'ciscocbs') fixScript = 'clock timezone ICT +7\nsntp unicast client enable\nsntp server vn.pool.ntp.org';
+    else if (v === 'huawei') fixScript = 'clock timezone ICT add 07:00:00\nntp-service unicast-server vn.pool.ntp.org';
+    else if (v === 'aruba') fixScript = 'clock timezone Asia/Ho_Chi_Minh\nntp server vn.pool.ntp.org\nntp enable';
+    else if (v === 'juniper') fixScript = 'set system time-zone Asia/Ho_Chi_Minh\nset system ntp server vn.pool.ntp.org';
+    else if (v === 'mikrotik') fixScript = '/system clock set time-zone-name=Asia/Ho_Chi_Minh\n/system ntp client set enabled=yes servers=vn.pool.ntp.org';
+    else if (v === 'fortinet') fixScript = 'config system ntp\n set ntpsync enable\n set type custom\n config ntpserver\n  edit 1\n   set server "vn.pool.ntp.org"\n  next\n end\nend';
+    else fixScript = 'ntp server vn.pool.ntp.org';
+
+    issues.push({
+      severity: 'suboptimal',
+      category: 'Thời Gian Hệ Thống',
+      title: 'Chưa đồng bộ thời gian NTP (Sai lệch giờ nhật ký Syslog)',
+      symptom: 'Log sự cố ghi sai thời điểm, khó đối chiếu khi kiểm tra lỗi.',
+      rootCause: 'Chưa khai báo máy chủ thời gian NTP và múi giờ +7.',
+      fixScript,
+      recommendation: 'Đồng bộ thời gian chuẩn qua vn.pool.ntp.org.'
+    });
+  } else {
+    verifiedGood.push('Hệ thống đã cấu hình đồng bộ thời gian NTP.');
   }
 
   score = Math.max(0, Math.min(100, score));
+  const execPosts = issues.map(i => i.execPostCmd).filter(Boolean);
+  let optLines = [];
+  if (v === 'mikrotik') {
+    optLines.push(`# KICH BAN OPTIMIZER - MIKROTIK ROUTEROS (CHUẨN CÚ PHÁP)`);
+    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+  } else if (v === 'juniper') {
+    optLines.push(`# KICH BAN OPTIMIZER - JUNIPER JUNOS`);
+    optLines.push(`configure`);
+    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    optLines.push(`commit and-quit`);
+  } else if (v === 'fortinet') {
+    optLines.push(`# KICH BAN OPTIMIZER - FORTIGATE FORTIOS`);
+    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+  } else if (v === 'huawei') {
+    optLines.push(`# KICH BAN OPTIMIZER - HUAWEI VRP (NHẬN DIỆN: ${faultyIntf})`);
+    optLines.push(`system-view`);
+    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    optLines.push(`return`);
+    execPosts.forEach(c => optLines.push(c));
+    optLines.push(`save`);
+  } else if (v === 'ciscocbs') {
+    optLines.push(`! KICH BAN OPTIMIZER - CISCO BUSINESS CBS (NHẬN DIỆN: ${faultyIntf})`);
+    optLines.push(`configure`);
+    issues.forEach(i => { optLines.push(`! ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    optLines.push(`end`);
+    execPosts.forEach(c => optLines.push(c));
+    optLines.push(`copy running-config startup-config`);
+  } else {
+    optLines.push(`! KICH BAN OPTIMIZER - ${v.toUpperCase()} (NHẬN DIỆN: ${faultyIntf})`);
+    optLines.push(`configure terminal`);
+    issues.forEach(i => { optLines.push(`! ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    optLines.push(`end`);
+    execPosts.forEach(c => optLines.push(c));
+    optLines.push(`write memory`);
+  }
 
-  let grade = score >= 90 ? 'A+ (Hoàn Hảo)' : (score >= 70 ? 'B (Tốt - Cần Tối Ưu)' : 'F (Sự Cố Nghiêm Trọng)');
-  let assessment = score >= 90 ? 'Cấu hình hoàn toàn chuẩn chỉ theo Best Practices của hãng!' : 'Phát hiện các điểm cần tối ưu hóa hoặc khắc phục sự cố ngay lập tức.';
+  let whatIsHappening = '';
+  if (score >= 90) {
+    whatIsHappening = `Thiết bị (${v.toUpperCase()}) đang hoạt động RẤT ỔN ĐỊNH! Không có lỗi CRC, không phát hiện vòng lặp Loop và cấu hình quản trị an toàn.`;
+  } else if (hasLoop || hasCrc) {
+    whatIsHappening = `CẢNH BÁO (${v.toUpperCase()}): Phát hiện sự cố tại cổng ${faultyIntf}! ` +
+      (hasCrc ? `Đang ghi nhận ${crcCount} lỗi CRC/Input Errors. ` : '') +
+      (hasLoop ? `Có dấu hiệu vòng lặp Loop / Err-Disabled. ` : '') +
+      'Kịch bản Optimizer bên dưới đã tự điền đúng tên cổng và cú pháp chuẩn của hãng.';
+  } else {
+    whatIsHappening = `Thiết bị (${v.toUpperCase()}) đang hoạt động bình thường nhưng thiếu các lớp bảo vệ chuẩn (BPDU Guard, tắt Telnet, đồng bộ NTP).`;
+  }
 
-  let optLines = ['! KỊCH BẢN TỐI ƯU HÓA TỰ ĐỘNG (OPTIMIZER SCRIPT)', ''];
-  issues.forEach(iss => {
-    optLines.push('! Sửa: ' + iss.title);
-    optLines.push(iss.fixScript);
-    optLines.push('');
-  });
-  optLines.push('write memory');
+  const fourAnswers = [
+    { q: 'Mạng hiện tại có bị sập hay mất kết nối không?', status: (hasLoop ? 'danger' : (hasCrc ? 'warning' : 'ok')), answer: hasLoop ? `Có nguy cơ mất kết nối do loop tại ${faultyIntf}!` : (hasCrc ? `Mạng không ổn định do lỗi vật lý tại ${faultyIntf}.` : 'Mạng thông suốt, truyền tải ổn định.') },
+    { q: 'Cáp mạng và cổng vật lý có bị hỏng không?', status: hasCrc ? 'danger' : 'ok', answer: hasCrc ? `Cổng ${faultyIntf} đang đếm ${crcCount} lỗi CRC.` : 'Toàn bộ cáp và cổng truyền dẫn tốt.' },
+    { q: 'Có ai cắm nhầm dây hay cắm trộm router con không?', status: hasLoop ? 'danger' : (hasBpduGuard ? 'ok' : 'warning'), answer: hasLoop ? `Phát hiện dấu hiệu loop tại ${faultyIntf}!` : (hasBpduGuard ? 'Đã có lớp bảo vệ BPDU.' : 'Chưa bật BPDU Guard chống cắm trộm.') },
+    { q: 'Bảo mật quản trị có an toàn không?', status: (isTelnet || isSnmpPublic) ? 'warning' : 'ok', answer: (isTelnet || isSnmpPublic) ? 'Cảnh báo: Đang mở Telnet hoặc SNMP public.' : 'An toàn: Không phát hiện Telnet / SNMP mặc định.' }
+  ];
 
   return {
+    detectedVendor: v,
+    detectedInterface: faultyIntf,
     healthScore: score,
-    grade: grade,
-    status: score >= 90 ? 'optimal' : (score >= 70 ? 'suboptimal' : 'critical'),
-    assessment: assessment,
-    verifiedGood: verifiedGood,
-    issues: issues,
+    grade: score >= 90 ? 'A+ (Hoàn Hảo)' : (score >= 70 ? 'C (Cần Tối Ưu)' : 'F (Sự Cố Nghiêm Trọng)'),
+    whatIsHappening,
+    fourAnswers,
+    verifiedGood,
+    issues,
     optimizerScript: optLines.join('\n')
   };
+}
+
+function fallbackClientAudit(text, protocol, ip) {
+  const hintedVendor = document.getElementById('diag-oneshot-vendor')?.value || 'AUTO';
+  return buildSmartAudit(text, hintedVendor);
 }
 
 function renderAuditReport(data) {

@@ -402,175 +402,519 @@ router.get('/mikrotik/mtcine', (req, res) => {
 // AI NETWORK CONFIG AUDIT & OPTIMIZER ENGINE (SSH & TELNET)
 // ==========================================
 
-router.post('/diagnose/audit-scan', (req, res) => {
-  const { configText, protocol, ip, vendor } = req.body;
+function detectVendorFromLog(text, hintedVendor) {
+  if (hintedVendor && hintedVendor !== 'AUTO') return hintedVendor;
+  if (/\/interface|\/ip address|RouterOS|sfp-sfpplus/i.test(text)) return 'mikrotik';
+  if (/config system global|config firewall policy|FortiGate/i.test(text)) return 'fortinet';
+  if (/sysname\s+|system-view|display\s+current|GigabitEthernet0\/0\/|bpdu-protection/i.test(text)) return 'huawei';
+  if (/set system host-name|set interfaces\s+ge-|commit/i.test(text)) return 'juniper';
+  if (/gi\d+\/0\/\d+|switchport general|terminal datadump/i.test(text)) return 'ciscocbs';
+  if (/1\/1\/\d+|AOS-CX|spanning-tree bpdu-guard/i.test(text)) return 'aruba';
+  if (/Ruijie|RGOS/i.test(text)) return 'ruijie';
+  return 'cisco';
+}
+
+function scanPhysicalAndCableHealth(text, vendor) {
+  const lines = text.split(/\r?\n/);
+  let currentIntf = null;
+  const intfRegex = /(GigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+|GigabitEthernet\s+\d+\/\d+|Gi\d+\/\d+\/\d+|Gi\d+\/\d+|gi\d+\/0\/\d+|FastEthernet\d+\/\d+|TenGigabitEthernet\d+\/\d+\/\d+|ge-\d+\/\d+\/\d+|1\/1\/\d+|ether\d+|port\d+)/i;
+
+  const faultyMap = new Map(); // intf -> { crc: 0, inputErr: 0, collisions: 0, halfDuplex: false, lowOptic: null }
+  const ensure = (name) => {
+    if (!faultyMap.has(name)) faultyMap.set(name, { crc: 0, inputErr: 0, collisions: 0, halfDuplex: false, lowOptic: null });
+    return faultyMap.get(name);
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    // Track current interface block header
+    const intfMatch = line.match(intfRegex);
+    if (intfMatch && (/^(?:interface|Physical interface|name:|GigabitEthernet|Gi\d|gi\d|FastEthernet|TenGigabitEthernet|ge-|1\/1\/|ether\d|port\d)/i.test(line) || /is (?:up|down)/i.test(line))) {
+      currentIntf = intfMatch[1].replace(/\s+/g, ' ');
+    }
+    const targetIntf = currentIntf || (intfMatch ? intfMatch[1] : null) || 'GigabitEthernet0/1';
+
+    // Match BOTH "<num> CRC" AND "CRC: <num>" / "FCS-Err: <num>" / "rx-fcs-error: <num>"
+    const crcPatterns = [
+      /(\d+)\s+(?:CRC|fcs-err(?:ors?)?|rx-fcs-error)/i,
+      /(?:CRC|FCS-Err(?:ors?)?|rx-fcs-error|fcs-errors)\s*[:=]\s*(\d+)/i
+    ];
+    for (const re of crcPatterns) {
+      const m = line.match(re);
+      if (m && parseInt(m[1], 10) > 0) {
+        ensure(targetIntf).crc += parseInt(m[1], 10);
+      }
+    }
+
+    // Match Input Errors / Rcv-Err in both orders
+    const inErrPatterns = [
+      /(\d+)\s+(?:input errors|rcv-err)/i,
+      /(?:input errors|rcv-err)\s*[:=]\s*(\d+)/i
+    ];
+    for (const re of inErrPatterns) {
+      const m = line.match(re);
+      if (m && parseInt(m[1], 10) > 0) {
+        ensure(targetIntf).inputErr += parseInt(m[1], 10);
+      }
+    }
+
+    // Match Collisions / Late Collisions / Runts
+    const colPatterns = [
+      /(\d+)\s+(?:late collision|collisions|runts|giants)/i,
+      /(?:late collisions?|collisions|runts)\s*[:=]\s*(\d+)/i
+    ];
+    for (const re of colPatterns) {
+      const m = line.match(re);
+      if (m && parseInt(m[1], 10) > 0) {
+        ensure(targetIntf).collisions += parseInt(m[1], 10);
+      }
+    }
+
+    // Detect Half-Duplex (classic cable / negotiation fault)
+    if (/half-duplex|duplex:\s*half/i.test(line)) {
+      ensure(targetIntf).halfDuplex = true;
+    }
+
+    // Detect Optical Rx Power Danger (<= -21.0 dBm)
+    const rxMatch = line.match(/(?:Rx\s*Power|Receive\s*Power|rx-power)\s*[:=]?\s*(-\d+(?:\.\d+)?)\s*dBm/i);
+    if (rxMatch && parseFloat(rxMatch[1]) <= -21.0) {
+      ensure(targetIntf).lowOptic = parseFloat(rxMatch[1]);
+    }
+  }
+
+  return Array.from(faultyMap.entries()).map(([intf, stats]) => ({ intf, ...stats }));
+}
+
+function extractFaultyInterface(text, vendor) {
+  const physicalFaults = scanPhysicalAndCableHealth(text, vendor);
+  if (physicalFaults.length > 0) return physicalFaults[0].intf;
+  const m = text.match(/(GigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+|Gi\d+\/\d+\/\d+|Gi\d+\/\d+|gi\d+\/0\/\d+|ge-\d+\/\d+\/\d+|1\/1\/\d+|ether\d+|port\d+)/i);
+  if (m) return m[1];
+  const defaults = {
+    cisco: 'GigabitEthernet0/1', ciscocbs: 'gi1/0/1', huawei: 'GigabitEthernet0/0/1',
+    juniper: 'ge-0/0/1', aruba: '1/1/1', ruijie: 'GigabitEthernet 0/1', mikrotik: 'ether1', fortinet: 'port1'
+  };
+  return defaults[vendor] || 'GigabitEthernet0/1';
+}
+
+function buildSmartAudit(configText, vendorHint) {
   const text = configText || '';
-  
+  const v = detectVendorFromLog(text, vendorHint);
+  const physicalFaults = scanPhysicalAndCableHealth(text, v);
+  const faultyIntf = extractFaultyInterface(text, v);
   const issues = [];
   const verifiedGood = [];
   let score = 100;
 
-  // 1. Phân tích lỗi cáp & truyền dẫn CRC
-  const crcMatch = text.match(/(\d+)\s+(?:CRC|input errors)/i);
-  let hasCrc = false;
-  let crcCount = 0;
-  if (crcMatch && parseInt(crcMatch[1], 10) > 0) {
-    hasCrc = true;
-    crcCount = parseInt(crcMatch[1], 10);
-    score -= 25;
-    issues.push({
-      severity: 'critical',
-      category: 'Cáp & Cổng Mạng',
-      title: 'Đang bị lỗi bấm dây mạng hoặc cáp hỏng (' + crcCount + ' lỗi CRC)',
-      location: 'Cổng giao tiếp',
-      symptom: 'Mạng bị chập chờn, tải file bị rớt, độ trễ giật lag bất thường.',
-      rootCause: 'Bấm đầu hạt mạng RJ45 bị lỏng chân tiếp xúc, hoặc dây cáp mạng đi chung ống với dây điện 3 pha gây nhiễu từ.',
-      fixScript: 'interface <cổng_lỗi>\n shutdown\n no shutdown\n clear counters <cổng_lỗi>\nexit',
-      recommendation: 'Bấm lại đầu mạng RJ45 mới và đổi sang dây cáp Cat6 chuẩn.'
+  const hasCrc = physicalFaults.length > 0;
+  const crcCount = physicalFaults.reduce((sum, f) => sum + f.crc + f.inputErr + f.collisions, 0);
+  if (hasCrc) {
+    score -= Math.min(35, 15 + physicalFaults.length * 10);
+    physicalFaults.forEach(pf => {
+      const detailParts = [];
+      if (pf.crc > 0) detailParts.push(`${pf.crc} CRC/FCS`);
+      if (pf.inputErr > 0) detailParts.push(`${pf.inputErr} Input Errors`);
+      if (pf.collisions > 0) detailParts.push(`${pf.collisions} Collisions/Runts`);
+      if (pf.halfDuplex) detailParts.push('Half-Duplex');
+      if (pf.lowOptic !== null) detailParts.push(`Quang yếu ${pf.lowOptic} dBm`);
+
+      let fixScript = '';
+      if (v === 'huawei') {
+        fixScript = `interface ${pf.intf}\n` + (pf.halfDuplex ? ' undo negotiation auto\n duplex full\n' : '') + ` shutdown\n undo shutdown\nquit`;
+      } else if (v === 'juniper') {
+        fixScript = `set interfaces ${pf.intf} disable\ndelete interfaces ${pf.intf} disable`;
+      } else if (v === 'mikrotik') {
+        fixScript = `/interface ethernet disable [find name="${pf.intf}"]\n/interface ethernet enable [find name="${pf.intf}"]`;
+      } else if (v === 'fortinet') {
+        fixScript = `config system interface\n edit "${pf.intf}"\n  set status down\n  set status up\n next\nend`;
+      } else {
+        fixScript = `interface ${pf.intf}\n` + (pf.halfDuplex ? ' duplex full\n speed 1000\n' : '') + ` shutdown\n no shutdown\nexit`;
+      }
+
+      issues.push({
+        severity: 'critical',
+        category: 'Cáp & Cổng Mạng',
+        title: `Lỗi vật lý / cáp tại ${pf.intf} (${detailParts.join(', ')})`,
+        location: pf.intf,
+        symptom: pf.lowOptic !== null
+          ? `Tín hiệu quang thu yếu (${pf.lowOptic} dBm <= -21 dBm), dễ rớt gói và đứt kết nối.`
+          : 'Mạng không ổn định, rớt gói tin, tốc độ sụt giảm hoặc đứt kết nối ngắt quãng.',
+        rootCause: pf.halfDuplex
+          ? 'Lệch chế độ Duplex (Half-Duplex) hoặc bấm thiếu cặp dây (chỉ ăn 4 sợi).'
+          : 'Đầu bấm RJ45 lỏng/oxy hóa, cáp hỏng, nhiễu điện từ hoặc suy hao module quang.',
+        fixScript,
+        execPostCmd: (v === 'cisco' || v === 'aruba' || v === 'ruijie') ? `clear counters ${pf.intf}` : (v === 'huawei' ? `reset counters interface ${pf.intf}` : ''),
+        recommendation: pf.lowOptic !== null
+          ? `Vệ sinh đầu dây nhảy quang / kiểm tra mối hàn hoặc thay module SFP tại ${pf.intf}.`
+          : `Kiểm tra và bấm lại đầu RJ45 (hoặc thay dây nhảy Cat6) tại cổng ${pf.intf}.`
+      });
     });
   } else {
-    verifiedGood.push('Cáp mạng và tín hiệu truyền dẫn vật lý rất tốt (0 lỗi CRC, không rớt gói).');
+    verifiedGood.push('Tín hiệu truyền dẫn vật lý tốt (0 lỗi CRC, Input Errors, Collisions hay Half-Duplex).');
   }
 
-  // 2. Phân tích Loop L2 & Cổng bị khóa
-  let hasLoop = false;
-  if (text.match(/err-disabled|MACFLAP_NOTIF|mac-move/i)) {
-    hasLoop = true;
+  const hasLoop = /err-disabled|MACFLAP_NOTIF|mac-move|loop-detect|bpduguard.*triggered/i.test(text);
+  if (hasLoop) {
     score -= 30;
+    let fixScript = '';
+    if (v === 'cisco') fixScript = `errdisable recovery cause bpduguard\nerrdisable recovery interval 30\ninterface ${faultyIntf}\n shutdown\n no shutdown\nexit`;
+    else if (v === 'ciscocbs') fixScript = `errdisable recovery cause bpdu-guard\nerrdisable recovery interval 30\ninterface ${faultyIntf}\n shutdown\n no shutdown\nexit`;
+    else if (v === 'huawei') fixScript = `error-down auto-recovery cause bpdu-protection interval 30\ninterface ${faultyIntf}\n shutdown\n undo shutdown\nquit`;
+    else if (v === 'aruba') fixScript = `interface ${faultyIntf}\n disable\n enable\nexit`;
+    else if (v === 'mikrotik') fixScript = `/interface bridge port set [find interface="${faultyIntf}"] disabled=yes\n/interface bridge port set [find interface="${faultyIntf}"] disabled=no`;
+    else fixScript = `interface ${faultyIntf}\n shutdown\n no shutdown\nexit`;
+
     issues.push({
       severity: 'critical',
       category: 'Loop Mạng & Spanning Tree',
-      title: 'Đang bị vòng lặp mạng (Loop) hoặc có cổng bị Switch tự khóa ngắt',
-      symptom: 'Đèn switch chớp loạn xạ, mạng toàn bộ công ty có thể bị tê liệt ngắt quãng do bão Broadcast.',
-      rootCause: 'Có người cắm nhầm dây mạng tạo thành vòng tròn giữa 2 switch, hoặc cắm router WiFi con vào mạng.',
-      fixScript: 'errdisable recovery cause bpduguard\nerrdisable recovery interval 30\ninterface <cổng_bị_loop>\n shutdown\n no shutdown\nexit',
-      recommendation: 'Rút ngay sợi dây cắm nhầm và bật tính năng BPDU Guard.'
+      title: `Phát hiện vòng lặp Loop / Khóa cổng Err-Disabled tại ${faultyIntf}`,
+      location: faultyIntf,
+      symptom: 'Đèn switch nháy liên tục, toàn mạng bị chậm hoặc mất kết nối ngắt quãng.',
+      rootCause: 'Cắm nhầm dây tạo vòng lặp giữa 2 cổng switch hoặc cắm thiết bị gây loop.',
+      fixScript,
+      recommendation: `Rút dây gây vòng lặp tại ${faultyIntf} trước khi mở lại cổng.`
     });
   } else {
-    verifiedGood.push('Hệ thống chuyển mạch ổn định, không phát hiện vòng lặp Loop hay bão Broadcast.');
+    verifiedGood.push('Hệ thống chuyển mạch ổn định, không phát hiện vòng lặp Loop.');
   }
 
-  // 3. Phân tích tính năng chống cắm nhầm BPDU Guard
-  let hasBpduGuard = text.match(/bpduguard|bpdu-guard|bpdu-protection/i);
-  if (!hasBpduGuard) {
+  const hasBpduGuard = /bpduguard|bpdu-guard|bpdu-protection|edge-port/i.test(text);
+  if (!hasBpduGuard && v !== 'fortinet' && v !== 'mikrotik') {
     score -= 10;
+    let fixScript = '';
+    if (v === 'cisco') fixScript = 'spanning-tree portfast default\nspanning-tree portfast bpduguard default';
+    else if (v === 'ciscocbs') fixScript = 'spanning-tree mode rstp\nspanning-tree loopback-guard';
+    else if (v === 'huawei') fixScript = 'stp bpdu-protection';
+    else if (v === 'aruba') fixScript = `interface ${faultyIntf}\n spanning-tree bpdu-guard\n spanning-tree port-type admin-edge\nexit`;
+    else if (v === 'juniper') fixScript = 'set protocols rstp interface all edge';
+    else fixScript = 'spanning-tree portfast bpduguard default';
+
     issues.push({
       severity: 'warning',
       category: 'Phòng Ngừa Sự Cố',
-      title: 'Chưa có lớp bảo vệ chống nhân viên tự cắm router WiFi lậu',
-      symptom: 'Hiện tại chưa bị sập, nhưng bất kỳ ai cắm nhầm router WiFi con vào tường đều có thể làm sập switch của bạn!',
-      rootCause: 'Chưa bật tính năng BPDU Guard trên các cổng cắm máy tính.',
-      fixScript: 'spanning-tree portfast bpduguard default\nspanning-tree portfast default',
-      recommendation: 'Bật BPDU Guard toàn cục để switch tự khóa cổng nếu phát hiện có người cắm router phụ.'
+      title: 'Chưa bật BPDU Guard bảo vệ chống cắm nhầm Switch/Router phụ',
+      symptom: 'Nếu nhân viên tự ý cắm router WiFi hoặc switch nhỏ gây loop, toàn mạng có thể bị treo.',
+      rootCause: 'Chưa kích hoạt cơ chế BPDU Guard / Protection trên các cổng truy cập.',
+      fixScript,
+      recommendation: 'Bật BPDU Guard để thiết bị tự động cô lập cổng khi phát hiện BPDU lạ.'
     });
   } else {
-    verifiedGood.push('Đã bật tính năng bảo vệ tự động chống cắm nhầm router con (BPDU Guard).');
+    verifiedGood.push('Đã kích hoạt cơ chế bảo vệ Spanning Tree / BPDU.');
   }
 
-  // 4. Phân tích an toàn bảo mật
-  let isTelnet = text.match(/transport input telnet/i);
-  let isSnmpPublic = text.match(/snmp-server community public/i);
+  const isTelnet = /transport input telnet|telnet server enable|service telnet/i.test(text);
+  const isSnmpPublic = /snmp-server community public|snmp-agent community read public/i.test(text);
   if (isTelnet || isSnmpPublic) {
     score -= 15;
+    let fixScript = '';
+    if (v === 'cisco' || v === 'ruijie') fixScript = (isTelnet ? 'line vty 0 4\n transport input ssh\nexit\n' : '') + (isSnmpPublic ? 'no snmp-server community public' : '');
+    else if (v === 'ciscocbs') fixScript = (isTelnet ? 'no ip telnet server\nip ssh server\n' : '') + (isSnmpPublic ? 'no snmp-server community public' : '');
+    else if (v === 'huawei') fixScript = (isTelnet ? 'undo telnet server enable\nstelnet server enable\n' : '') + (isSnmpPublic ? 'undo snmp-agent community public' : '');
+    else if (v === 'aruba') fixScript = (isTelnet ? 'no telnet-server\nssh server vrf default\n' : '') + (isSnmpPublic ? 'no snmp-server community public' : '');
+    else if (v === 'mikrotik') fixScript = '/ip service disable telnet\n/ip service enable ssh';
+    else fixScript = 'line vty 0 4\n transport input ssh\nexit';
+
     issues.push({
       severity: 'warning',
       category: 'An Toàn Bảo Mật',
-      title: 'Đang mở cửa cho hacker nhìn trộm mật khẩu (Telnet / SNMP public)',
-      symptom: 'Mật khẩu quản trị truyền đi không được mã hóa, ai cùng mạng LAN cũng có thể bắt được mật khẩu.',
-      rootCause: 'Vẫn còn bật giao thức Telnet cũ hoặc để pass SNMP mặc định là "public".',
-      fixScript: 'line vty 0 4\n transport input ssh\nexit\nno snmp-server community public',
-      recommendation: 'Khóa cổng Telnet, chuyển hoàn toàn sang SSH mã hóa an toàn.'
+      title: 'Đang mở giao thức quản trị không mã hóa (Telnet / SNMP public)',
+      symptom: 'Mật khẩu quản trị và thông tin cấu hình truyền dạng văn bản rõ trong mạng LAN.',
+      rootCause: 'Còn bật dịch vụ Telnet cũ hoặc chuỗi SNMP community mặc định "public".',
+      fixScript: fixScript.trim(),
+      recommendation: 'Tắt Telnet, chuyển sang SSH và gỡ bỏ SNMP community mặc định.'
     });
   } else {
-    verifiedGood.push('Giao thức quản trị an toàn (đã chặn Telnet không mã hóa).');
+    verifiedGood.push('Giao thức quản trị an toàn (không mở Telnet / SNMP mặc định).');
   }
 
-  // 5. Phân tích đồng bộ giờ NTP
-  let hasNtp = text.match(/ntp server|sntp server/i);
+  const hasNtp = /ntp server|sntp server|ntp-service|system ntp/i.test(text);
   if (!hasNtp) {
     score -= 10;
+    let fixScript = '';
+    if (v === 'cisco' || v === 'ruijie') fixScript = 'clock timezone ICT 7 0\nntp server vn.pool.ntp.org';
+    else if (v === 'ciscocbs') fixScript = 'clock timezone ICT +7\nsntp unicast client enable\nsntp server vn.pool.ntp.org';
+    else if (v === 'huawei') fixScript = 'clock timezone ICT add 07:00:00\nntp-service unicast-server vn.pool.ntp.org';
+    else if (v === 'aruba') fixScript = 'clock timezone Asia/Ho_Chi_Minh\nntp server vn.pool.ntp.org\nntp enable';
+    else if (v === 'juniper') fixScript = 'set system time-zone Asia/Ho_Chi_Minh\nset system ntp server vn.pool.ntp.org';
+    else if (v === 'mikrotik') fixScript = '/system clock set time-zone-name=Asia/Ho_Chi_Minh\n/system ntp client set enabled=yes servers=vn.pool.ntp.org';
+    else if (v === 'fortinet') fixScript = 'config system ntp\n set ntpsync enable\n set type custom\n config ntpserver\n  edit 1\n   set server "vn.pool.ntp.org"\n  next\n end\nend';
+    else fixScript = 'ntp server vn.pool.ntp.org';
+
     issues.push({
       severity: 'suboptimal',
       category: 'Thời Gian Hệ Thống',
-      title: 'Đồng hồ thiết bị bị sai giờ (Chưa đồng bộ giờ quốc gia)',
-      symptom: 'Nhật ký lỗi ghi sai ngày giờ, gây khó khăn khi điều tra sự cố.',
-      rootCause: 'Chưa khai báo máy chủ đồng bộ thời gian NTP.',
-      fixScript: 'clock timezone ICT 7 0\nntp server vn.pool.ntp.org\nntp server 1.1.1.1',
-      recommendation: 'Đồng bộ giờ với vn.pool.ntp.org để nhật ký luôn chuẩn xác theo giờ Việt Nam.'
+      title: 'Chưa đồng bộ thời gian NTP (Sai lệch giờ nhật ký Syslog)',
+      symptom: 'Log sự cố ghi sai thời điểm, khó đối chiếu khi kiểm tra lỗi.',
+      rootCause: 'Chưa khai báo máy chủ thời gian NTP và múi giờ +7.',
+      fixScript,
+      recommendation: 'Đồng bộ thời gian chuẩn qua vn.pool.ntp.org.'
     });
   } else {
-    verifiedGood.push('Đồng hồ hệ thống đã được đồng bộ chính xác với máy chủ giờ quốc gia.');
+    verifiedGood.push('Hệ thống đã cấu hình đồng bộ thời gian NTP.');
   }
 
   score = Math.max(0, Math.min(100, score));
-
-  // Tạo lời giải thích bằng Tiếng Việt đời thường, dễ hiểu nhất
-  let whatIsHappening = '';
-  if (score >= 90) {
-    whatIsHappening = 'Thiết bị của bạn đang trong trạng thái RẤT TỐT VÀ KHỎE MẠNH! Không có hiện tượng nghẽn mạng, cáp truyền dẫn 0 lỗi, không bị loop và không có ai tấn công phá hoại. Bạn có thể hoàn toàn yên tâm!';
-  } else if (hasLoop || hasCrc) {
-    whatIsHappening = 'CẢNH BÁO SỰ CỐ: Thiết bị của bạn ĐANG CÓ VẤN ĐỀ TRUYỀN DẪN! Cụ thể: ' + 
-      (hasCrc ? ('Dây mạng đang bị lỗi bấm hạt hoặc đứt ngầm (' + crcCount + ' lỗi CRC) gây chập chờn rớt mạng. ') : '') +
-      (hasLoop ? 'Đang có hiện tượng cắm nhầm dây tạo vòng lặp Loop L2 làm switch bị quá tải. ' : '') + 
-      'Hãy bấm ngay nút "KÍCH HOẠT OPTIMIZER" bên dưới để lấy lệnh sửa ngay!';
+  const execPosts = issues.map(i => i.execPostCmd).filter(Boolean);
+  let optLines = [];
+  if (v === 'mikrotik') {
+    optLines.push(`# KICH BAN OPTIMIZER - MIKROTIK ROUTEROS (CHUẨN CÚ PHÁP)`);
+    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+  } else if (v === 'juniper') {
+    optLines.push(`# KICH BAN OPTIMIZER - JUNIPER JUNOS`);
+    optLines.push(`configure`);
+    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    optLines.push(`commit and-quit`);
+  } else if (v === 'fortinet') {
+    optLines.push(`# KICH BAN OPTIMIZER - FORTIGATE FORTIOS`);
+    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+  } else if (v === 'huawei') {
+    optLines.push(`# KICH BAN OPTIMIZER - HUAWEI VRP (NHẬN DIỆN: ${faultyIntf})`);
+    optLines.push(`system-view`);
+    issues.forEach(i => { optLines.push(`# ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    optLines.push(`return`);
+    execPosts.forEach(c => optLines.push(c));
+    optLines.push(`save`);
+  } else if (v === 'ciscocbs') {
+    optLines.push(`! KICH BAN OPTIMIZER - CISCO BUSINESS CBS (NHẬN DIỆN: ${faultyIntf})`);
+    optLines.push(`configure`);
+    issues.forEach(i => { optLines.push(`! ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    optLines.push(`end`);
+    execPosts.forEach(c => optLines.push(c));
+    optLines.push(`copy running-config startup-config`);
   } else {
-    whatIsHappening = 'Thiết bị vẫn đang truyền tải mạng được, nhưng CẤU HÌNH CÒN NHIỀU KẼ HỞ CHƯA AN TOÀN (chưa có lớp bảo vệ chống cắm router con, chưa khóa Telnet, chưa đồng bộ giờ). Nếu không tối ưu, khi có sự cố bất ngờ thiết bị sẽ rất dễ bị tê liệt.';
+    optLines.push(`! KICH BAN OPTIMIZER - ${v.toUpperCase()} (NHẬN DIỆN: ${faultyIntf})`);
+    optLines.push(`configure terminal`);
+    issues.forEach(i => { optLines.push(`! ${i.title}`); optLines.push(i.fixScript); optLines.push(''); });
+    optLines.push(`end`);
+    execPosts.forEach(c => optLines.push(c));
+    optLines.push(`write memory`);
   }
 
-  // Trả lời trực diện 4 câu hỏi sống còn của người quản trị
+  let whatIsHappening = '';
+  if (score >= 90) {
+    whatIsHappening = `Thiết bị (${v.toUpperCase()}) đang hoạt động RẤT ỔN ĐỊNH! Không có lỗi CRC, không phát hiện vòng lặp Loop và cấu hình quản trị an toàn.`;
+  } else if (hasLoop || hasCrc) {
+    whatIsHappening = `CẢNH BÁO (${v.toUpperCase()}): Phát hiện sự cố tại cổng ${faultyIntf}! ` +
+      (hasCrc ? `Đang ghi nhận ${crcCount} lỗi CRC/Input Errors. ` : '') +
+      (hasLoop ? `Có dấu hiệu vòng lặp Loop / Err-Disabled. ` : '') +
+      'Kịch bản Optimizer bên dưới đã tự điền đúng tên cổng và cú pháp chuẩn của hãng.';
+  } else {
+    whatIsHappening = `Thiết bị (${v.toUpperCase()}) đang hoạt động bình thường nhưng thiếu các lớp bảo vệ chuẩn (BPDU Guard, tắt Telnet, đồng bộ NTP).`;
+  }
+
   const fourAnswers = [
-    {
-      q: 'Mạng hiện tại có bị sập hay mất kết nối không?',
-      status: (hasLoop ? 'danger' : (hasCrc ? 'warning' : 'ok')),
-      answer: hasLoop ? 'Có nguy cơ sập mạng do phát hiện hiện tượng vòng lặp loop!' : (hasCrc ? 'Mạng không sập nhưng bị chập chờn do lỗi cáp vật lý.' : 'Mạng đang thông suốt hoàn toàn, truyền tải ổn định.')
-    },
-    {
-      q: 'Cáp mạng và cổng vật lý có bị hỏng không?',
-      status: hasCrc ? 'danger' : 'ok',
-      answer: hasCrc ? ('Có cổng đang đếm ' + crcCount + ' lỗi CRC (bấm đầu cáp hỏng hoặc dây kém chất lượng).') : 'Toàn bộ cáp mạng và cổng đều truyền dẫn tốt, không bị lỗi frame.'
-    },
-    {
-      q: 'Có ai cắm nhầm dây hay cắm trộm router con làm loạn mạng không?',
-      status: hasLoop ? 'danger' : (hasBpduGuard ? 'ok' : 'warning'),
-      answer: hasLoop ? 'CẢNH BÁO: Đang có dấu hiệu cắm nhầm tạo loop!' : (hasBpduGuard ? 'Đã có lớp bảo vệ an toàn, không bị cắm trộm.' : 'Chưa có lớp bảo vệ BPDU Guard, rất dễ bị cắm trộm router con!')
-    },
-    {
-      q: 'Bảo mật thiết bị có bị hacker nhìn trộm mật khẩu không?',
-      status: (isTelnet || isSnmpPublic) ? 'warning' : 'ok',
-      answer: (isTelnet || isSnmpPublic) ? 'Cảnh báo: Đang mở Telnet không mã hóa, mật khẩu có thể bị bắt lén qua Wireshark.' : 'An toàn: Đã mã hóa bảo mật đường truyền quản trị.'
-    }
+    { q: 'Mạng hiện tại có bị sập hay mất kết nối không?', status: (hasLoop ? 'danger' : (hasCrc ? 'warning' : 'ok')), answer: hasLoop ? `Có nguy cơ mất kết nối do loop tại ${faultyIntf}!` : (hasCrc ? `Mạng không ổn định do lỗi vật lý tại ${faultyIntf}.` : 'Mạng thông suốt, truyền tải ổn định.') },
+    { q: 'Cáp mạng và cổng vật lý có bị hỏng không?', status: hasCrc ? 'danger' : 'ok', answer: hasCrc ? `Cổng ${faultyIntf} đang đếm ${crcCount} lỗi CRC.` : 'Toàn bộ cáp và cổng truyền dẫn tốt.' },
+    { q: 'Có ai cắm nhầm dây hay cắm trộm router con không?', status: hasLoop ? 'danger' : (hasBpduGuard ? 'ok' : 'warning'), answer: hasLoop ? `Phát hiện dấu hiệu loop tại ${faultyIntf}!` : (hasBpduGuard ? 'Đã có lớp bảo vệ BPDU.' : 'Chưa bật BPDU Guard chống cắm trộm.') },
+    { q: 'Bảo mật quản trị có an toàn không?', status: (isTelnet || isSnmpPublic) ? 'warning' : 'ok', answer: (isTelnet || isSnmpPublic) ? 'Cảnh báo: Đang mở Telnet hoặc SNMP public.' : 'An toàn: Không phát hiện Telnet / SNMP mặc định.' }
   ];
 
-  // Kịch bản Optimizer sửa lỗi
-  let optLines = [
-    '! ========================================================',
-    '! KỊCH BẢN OPTIMIZER - TỰ ĐỘNG SỬA TOÀN BỘ VẤN ĐỀ TRÊN',
-    '! Dán trực tiếp vào cổng Console / SSH của thiết bị',
-    '! ========================================================',
-    'configure terminal',
-    ''
-  ];
-
-  issues.forEach(iss => {
-    optLines.push('! Khắc phục: ' + iss.title);
-    optLines.push(iss.fixScript);
-    optLines.push('');
-  });
-
-  optLines.push('! Lưu cấu hình an toàn vào bộ nhớ Flash:');
-  optLines.push('write memory');
-
-  res.json({
+  return {
+    detectedVendor: v,
+    detectedInterface: faultyIntf,
     healthScore: score,
     grade: score >= 90 ? 'A+ (Hoàn Hảo)' : (score >= 70 ? 'C (Cần Tối Ưu)' : 'F (Sự Cố Nghiêm Trọng)'),
-    whatIsHappening: whatIsHappening,
-    fourAnswers: fourAnswers,
-    verifiedGood: verifiedGood,
-    issues: issues,
+    whatIsHappening,
+    fourAnswers,
+    verifiedGood,
+    issues,
     optimizerScript: optLines.join('\n')
+  };
+}
+
+
+// ==========================================
+// LIVE SSH / TELNET MAC ADDRESS PORT TRACER
+// ==========================================
+function normalizeMacFormats(rawMac) {
+  const hex = String(rawMac || '').replace(/[^0-9a-fA-F]/g, '').toLowerCase();
+  if (hex.length !== 12) return null;
+  const colon = hex.match(/.{2}/g).join(':');
+  const dash = hex.match(/.{2}/g).join('-');
+  const dot = hex.match(/.{4}/g).join('.');
+  const huaweiDash = hex.match(/.{4}/g).join('-');
+  return { hex, colon, COLON: colon.toUpperCase(), dash, dot, huaweiDash };
+}
+
+function getMacLookupCmd(vendor, mac) {
+  switch (vendor) {
+    case 'huawei':
+      return `display mac-address ${mac.huaweiDash}`;
+    case 'juniper':
+      return `show ethernet-switching table | match ${mac.colon}`;
+    case 'aruba':
+      return `show mac-address-table address ${mac.colon}`;
+    case 'mikrotik':
+      return `/interface bridge host print where mac-address="${mac.COLON}"`;
+    case 'fortinet':
+      return `diagnose ip arp list | grep ${mac.colon}`;
+    case 'ciscocbs':
+    case 'edgecore':
+      return `show mac address-table address ${mac.colon}`;
+    case 'ruijie':
+      return `show mac-address-table address ${mac.dot}`;
+    case 'cisco':
+    default:
+      return `show mac address-table address ${mac.dot}`;
+  }
+}
+
+function parseMacTraceOutput(rawOutput, mac) {
+  const lines = String(rawOutput || '').split(/\r?\n/);
+  const matches = [];
+  const intfRe = /(TenGigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+\/\d+|GigabitEthernet\d+\/\d+|GigabitEthernet\s+\d+\/\d+|Gi\d+\/\d+\/\d+|Gi\d+\/\d+|gi\d+\/0\/\d+|FastEthernet\d+\/\d+|Fa\d+\/\d+|Port-channel\d+|Po\d+|Eth-Trunk\d+|GE\d+\/\d+\/\d+|ge-\d+\/\d+\/\d+|xe-\d+\/\d+\/\d+|1\/1\/\d+|ether\d+|sfp[^\s]*|bridge[^\s]*)/i;
+  for (const line of lines) {
+    const low = line.toLowerCase().replace(/[^0-9a-z]/g, '');
+    if (low.includes(mac.hex)) {
+      const mIntf = line.match(intfRe);
+      const mVlan = line.match(/^\s*(\d{1,4})\s+/);
+      const isStatic = /static|permanent/i.test(line);
+      const port = mIntf ? mIntf[1].trim() : null;
+      if (port) {
+        const isUplink = /port-channel|^po\d+|eth-trunk|sfp|trunk|uplink/i.test(port);
+        matches.push({
+          vlan: mVlan ? mVlan[1] : 'N/A',
+          port,
+          type: isStatic ? 'STATIC' : 'DYNAMIC',
+          isUplink,
+          rawLine: line.trim()
+        });
+      }
+    }
+  }
+  return matches;
+}
+
+function execTelnetCommand({ host, port, username, password, command }) {
+  return new Promise((resolve, reject) => {
+    const net = require('net');
+    const socket = new net.Socket();
+    let buffer = '';
+    let step = 0;
+    let settled = false;
+    const done = (err, out) => {
+      if (settled) return;
+      settled = true;
+      try { socket.destroy(); } catch (e) {}
+      if (err) reject(err); else resolve(out);
+    };
+    socket.setTimeout(9000);
+    socket.on('timeout', () => done(new Error('Telnet timeout: Thiết bị không phản hồi trong 9 giây.')));
+    socket.on('error', (err) => done(err));
+    socket.on('data', (chunk) => {
+      const str = chunk.toString('utf8');
+      buffer += str;
+      if (step === 0 && /username|login|user:/i.test(buffer)) {
+        step = 1;
+        socket.write(username + '\r\n');
+      } else if (step <= 1 && /password:/i.test(buffer)) {
+        step = 2;
+        socket.write(password + '\r\n');
+      } else if (step === 2 && /[>#\]]\s*$/.test(buffer.trim())) {
+        step = 3;
+        socket.write('terminal length 0\r\n');
+        setTimeout(() => socket.write(command + '\r\n'), 300);
+        setTimeout(() => done(null, buffer), 2200);
+      }
+    });
+    socket.connect(parseInt(port, 10) || 23, host);
   });
+}
+
+function execSshCommand({ host, port, username, password, command }) {
+  return new Promise((resolve, reject) => {
+    let Client;
+    try {
+      ({ Client } = require('ssh2'));
+    } catch (e) {
+      return reject(new Error('Chưa cài đặt thư viện ssh2 trên Ubuntu Server. Hãy chạy: cd /var/www/netcli && npm install && pm2 restart netcli'));
+    }
+    const conn = new Client();
+    let out = '';
+    const timer = setTimeout(() => {
+      try { conn.end(); } catch (e) {}
+      reject(new Error('SSH timeout: Thiết bị không phản hồi trong 10 giây.'));
+    }, 10000);
+
+    conn.on('ready', () => {
+      conn.exec(command, (err, stream) => {
+        if (err) {
+          clearTimeout(timer);
+          conn.end();
+          return reject(err);
+        }
+        stream.on('close', () => {
+          clearTimeout(timer);
+          conn.end();
+          resolve(out);
+        }).on('data', (d) => { out += d.toString('utf8'); })
+          .stderr.on('data', (d) => { out += d.toString('utf8'); });
+      });
+    }).on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    }).connect({
+      host,
+      port: parseInt(port, 10) || 22,
+      username,
+      password,
+      readyTimeout: 8000,
+      algorithms: {
+        kex: ['diffie-hellman-group14-sha1', 'diffie-hellman-group1-sha1', 'diffie-hellman-group14-sha256', 'ecdh-sha2-nistp256'],
+        cipher: ['aes128-ctr', 'aes256-ctr', 'aes128-cbc', '3des-cbc']
+      }
+    });
+  });
+}
+
+router.post('/diagnose/mac-trace', async (req, res) => {
+  const { protocol, host, port, username, password, vendor, macAddress } = req.body || {};
+  if (!protocol || !['SSH', 'TELNET'].includes(String(protocol).toUpperCase())) {
+    return res.status(400).json({ error: 'Tính năng dò cổng theo MAC bắt buộc phải kết nối trực tiếp qua SSH hoặc Telnet vào thiết bị.' });
+  }
+  if (!host || !username || !password) {
+    return res.status(400).json({ error: 'Vui lòng nhập đầy đủ IP thiết bị, Username và Password SSH/Telnet.' });
+  }
+  const mac = normalizeMacFormats(macAddress);
+  if (!mac) {
+    return res.status(400).json({ error: 'Địa chỉ MAC không hợp lệ. Vui lòng nhập đủ 12 ký tự Hex (VD: aa:bb:cc:dd:ee:ff hoặc aabb.ccdd.eeff).' });
+  }
+
+  const vKey = vendor || 'cisco';
+  const lookupCmd = getMacLookupCmd(vKey, mac);
+  const proto = String(protocol).toUpperCase();
+
+  try {
+    const rawOutput = proto === 'TELNET'
+      ? await execTelnetCommand({ host, port: port || 23, username, password, command: lookupCmd })
+      : await execSshCommand({ host, port: port || 22, username, password, command: lookupCmd });
+
+    const matches = parseMacTraceOutput(rawOutput, mac);
+    res.json({
+      success: true,
+      protocol: proto,
+      host,
+      vendor: vKey,
+      macFormats: mac,
+      commandExecuted: lookupCmd,
+      matches,
+      rawOutput
+    });
+  } catch (err) {
+    res.status(502).json({
+      success: false,
+      error: err.message || 'Không thể kết nối tới thiết bị.',
+      commandExecuted: lookupCmd
+    });
+  }
 });
 
+router.post('/diagnose/audit-scan', (req, res) => {
+  const { configText, vendor } = req.body;
+  res.json(buildSmartAudit(configText, vendor));
+});
 
 // ==========================================
 // SYSTEM VERSION & CHECK FOR UPDATE APIS

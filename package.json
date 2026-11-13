@@ -21,6 +21,7 @@
   "author": "KhangIT <duonganhkhang95@gmail.com> (TikTok: @khangdd72)",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "ssh2": "^1.16.0"
   }
 }

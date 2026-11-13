@@ -249,11 +249,11 @@
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Access Port:</label>
-          <input id="param-access-port" type="text" value="ge-0/0/1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+          <input id="param-access-port" list="vendor-access-port-presets" type="text" value="ge-0/0/1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Trunk Port:</label>
-          <input id="param-trunk-port" type="text" value="ge-0/0/24" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+          <input id="param-trunk-port" list="vendor-trunk-port-presets" type="text" value="ge-0/0/24" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
         </div>
         <div>
           <label class="block text-slate-400 mb-1">IP Gateway / CIDR:</label>
@@ -287,6 +287,32 @@
           <button id="btn-reset-params" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-1.5 rounded transition">
             Khôi phục mặc định
           </button>
+        </div>
+      </div>
+      <!-- Stack Mode & Port Range Mode Bar -->
+      <div class="px-4 pb-4 pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center gap-4 text-xs">
+        <!-- Stack vs Standalone Selector -->
+        <div class="flex items-center gap-2 pr-3 sm:border-r border-slate-800">
+          <span class="text-slate-400 font-medium">Kiến trúc Switch:</span>
+          <select id="param-stack-mode" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs font-semibold text-cyan-300 focus:outline-none focus:border-cyan-500">
+            <option value="standalone">Không Stack (Standalone)</option>
+            <option value="stack">Có Stack (Switch / Unit ID)</option>
+          </select>
+          <div id="param-stack-unit-box" class="hidden flex items-center gap-1.5">
+            <span class="text-slate-400">Unit:</span>
+            <input id="param-stack-unit" type="number" min="1" max="16" value="1" class="w-14 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-cyan-300 text-center focus:outline-none focus:border-cyan-500" title="Số thứ tự Switch trong Stack (1, 2, 3...)">
+          </div>
+        </div>
+        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+          <input id="param-range-enable" type="checkbox" class="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500 cursor-pointer">
+          <span class="font-semibold text-emerald-400">⚡ Chế độ Range Port (Cấu hình hàng loạt nhiều cổng theo chuẩn từng hãng)</span>
+        </label>
+        <div id="param-range-inputs" class="flex items-center gap-2 opacity-50 pointer-events-none transition">
+          <span class="text-slate-400">Từ cổng:</span>
+          <input id="param-range-start" type="number" min="1" max="52" value="1" class="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300 text-center focus:outline-none focus:border-emerald-500">
+          <span class="text-slate-400">➔ Đến cổng:</span>
+          <input id="param-range-end" type="number" min="1" max="52" value="24" class="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono text-emerald-300 text-center focus:outline-none focus:border-emerald-500">
+          <span class="text-[11px] text-slate-500 italic hidden md:inline">(Tự chuyển thành <code class="text-emerald-400">interface range ...</code>, <code class="text-emerald-400">port-group</code>, <code class="text-emerald-400">1/1/1-1/1/24</code>...)</span>
         </div>
       </div>
     </details>
@@ -767,11 +793,11 @@
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Access Port:</label>
-          <input id="bparam-access-port" type="text" value="ge-0/0/1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+          <input id="bparam-access-port" list="vendor-access-port-presets" type="text" value="ge-0/0/1" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Trunk Port:</label>
-          <input id="bparam-trunk-port" type="text" value="ge-0/0/24" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+          <input id="bparam-trunk-port" list="vendor-trunk-port-presets" type="text" value="ge-0/0/24" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
         </div>
         <div>
           <label class="block text-slate-400 mb-1">IP Gateway / CIDR:</label>
@@ -1056,6 +1082,45 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             <span>Kết Nối Trực Tiếp &amp; Bắt Đầu Scan Cấu Hình</span>
           </button>
+        </div>
+
+        <!-- Live SSH / Telnet MAC Address Port Tracer -->
+        <div class="bg-slate-950 p-5 rounded-xl border border-emerald-500/30 space-y-3 max-w-2xl text-xs">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <span class="font-bold text-emerald-400 flex items-center gap-1.5">
+              <span>🔍 Dò Nhanh Cổng Đang Cắm Theo Địa Chỉ MAC (Live SSH / Telnet)</span>
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold">Yêu cầu SSH / Telnet</span>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Dán địa chỉ MAC thiết bị cần tìm (hỗ trợ mọi định dạng <code class="text-slate-200">aa:bb:cc:dd:ee:ff</code>, <code class="text-slate-200">aabb.ccdd.eeff</code>, <code class="text-slate-200">aa-bb-cc-dd-ee-ff</code>). Hệ thống dùng thông tin SSH/Telnet ở trên để truy vấn trực tiếp bảng MAC thực tế trên Switch/Router.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+            <div class="sm:col-span-4">
+              <label class="block text-slate-300 font-medium mb-1">Hãng thiết bị:</label>
+              <select id="mac-trace-vendor" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+                <option value="cisco">Cisco Catalyst (IOS)</option>
+                <option value="ciscocbs">Cisco CBS 250/350/550</option>
+                <option value="huawei">Huawei VRP</option>
+                <option value="juniper">Juniper Junos</option>
+                <option value="aruba">HPE Aruba AOS-CX</option>
+                <option value="ruijie">Ruijie RGOS</option>
+                <option value="edgecore">Edgecore ECS</option>
+                <option value="mikrotik">MikroTik RouterOS</option>
+                <option value="fortinet">Fortinet FortiGate</option>
+              </select>
+            </div>
+            <div class="sm:col-span-5">
+              <label class="block text-slate-300 font-medium mb-1">Địa chỉ MAC cần tìm:</label>
+              <input id="mac-trace-input" type="text" placeholder="VD: 00:1a:2b:3c:4d:5e hoặc 001a.2b3c.4d5e" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
+            </div>
+            <div class="sm:col-span-3">
+              <button id="btn-run-mac-trace" type="button" class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition shadow flex items-center justify-center gap-1.5">
+                <span>Dò Cổng</span>
+              </button>
+            </div>
+          </div>
+          <div id="mac-trace-result" class="hidden pt-2 border-t border-slate-800 space-y-2"></div>
         </div>
       </div>
 
@@ -1588,5 +1653,29 @@
 
   <!-- SCRIPT DATABASE & LOGIC -->
   <script src="/js/app.js"></script>
+  <datalist id="vendor-access-port-presets">
+    <option value="GigabitEthernet0/1">Cisco IOS / Catalyst</option>
+    <option value="gi1/0/1">Cisco CBS 250/350/550</option>
+    <option value="ge-0/0/1">Juniper Junos</option>
+    <option value="port1">Fortinet FortiGate</option>
+    <option value="GigabitEthernet0/0/1">Huawei VRP</option>
+    <option value="ether1">MikroTik RouterOS</option>
+    <option value="1/1/1">Aruba AOS-CX</option>
+    <option value="GigabitEthernet 0/1">Ruijie RGOS</option>
+    <option value="Ethernet 1/1">Edgecore ECS</option>
+    <option value="P1">DrayTek VigorOS</option>
+  </datalist>
+  <datalist id="vendor-trunk-port-presets">
+    <option value="GigabitEthernet0/24">Cisco IOS / Catalyst</option>
+    <option value="gi1/0/24">Cisco CBS 250/350/550</option>
+    <option value="ge-0/0/24">Juniper Junos</option>
+    <option value="port2">Fortinet FortiGate</option>
+    <option value="GigabitEthernet0/0/24">Huawei VRP</option>
+    <option value="sfp-sfpplus1">MikroTik RouterOS</option>
+    <option value="1/1/24">Aruba AOS-CX</option>
+    <option value="GigabitEthernet 0/24">Ruijie RGOS</option>
+    <option value="Ethernet 1/24">Edgecore ECS</option>
+    <option value="P2">DrayTek VigorOS</option>
+  </datalist>
 </body>
 </html>
