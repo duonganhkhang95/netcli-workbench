@@ -738,7 +738,7 @@ function getMacLookupCmd(vendor, mac) {
     case 'aruba': return `show mac-address-table address ${mac.colon}`;
     case 'mikrotik': return `/interface bridge host print where mac-address="${mac.COLON}"`;
     case 'fortinet': return `diagnose ip arp list | grep ${mac.colon}`;
-    case 'draytek_sw':
+    case 'draytek_sw': return `show mac address-table`;
     case 'ciscocbs':
     case 'edgecore': return `show mac address-table address ${mac.colon}`;
     case 'ruijie': return `show mac-address-table address ${mac.dot}`;
@@ -984,7 +984,7 @@ router.post('/diagnose/audit-scan', (req, res) => {
 // ==========================================
 // SYSTEM VERSION & CHECK FOR UPDATE APIS
 // ==========================================
-const APP_VERSION = '2.7.0';
+const APP_VERSION = '2.8.0';
 const APP_BUILD_DATE = '2026-11-12';
 
 router.get('/system/version', (req, res) => {

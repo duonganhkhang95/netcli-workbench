@@ -2325,6 +2325,10 @@ function initDiagnosticAssistant() {
         if (msg.state === 'connected') {
           setTermStatus('connected', `🟢 ${msg.protocol} • ${msg.host}:${msg.port}`);
           showToast(`Đã mở Terminal ${msg.protocol} tới ${msg.host}!`);
+          setTimeout(() => {
+            const passive = parseDeviceFingerprint(termLogBuffer);
+            if (passive) updateDetectedDeviceBadge(passive);
+          }, 900);
         } else {
           setTermStatus('disconnected', '🔴 Đã ngắt kết nối');
         }
@@ -2451,6 +2455,10 @@ function initDiagnosticAssistant() {
     }
   });
 
+  document.getElementById('btn-identify-switch')?.addEventListener('click', () => {
+    runSwitchIdentification(false);
+  });
+
   // Live Terminal Auto-Detect MAC Address Port Tracer (with Anti-Paging)
   document.getElementById('btn-run-mac-trace')?.addEventListener('click', async () => {
     const rawMac = document.getElementById('mac-trace-input')?.value.trim();
@@ -2462,9 +2470,13 @@ function initDiagnosticAssistant() {
       return;
     }
 
-    // Mode 1: Query directly inside active Live Terminal session (Auto-detects vendor + disables paging)
+    // Mode 1: Query directly inside active Live Terminal session (Fingerprint-aware + Auto-fallback on Invalid input)
     if (termWs && termWs.readyState === WebSocket.OPEN) {
-      const detectedVendor = detectVendorFromLog(termLogBuffer, 'AUTO');
+      const fp = activeDetectedDevice || parseDeviceFingerprint(termLogBuffer);
+      if (fp && !activeDetectedDevice) updateDetectedDeviceBadge(fp);
+      const detectedVendor = fp ? fp.vendor : detectVendorFromLog(termLogBuffer, 'AUTO');
+      const deviceLabel = fp ? fp.label : detectedVendor.toUpperCase();
+
       const disablePaging = {
         cisco: 'terminal length 0',
         ciscocbs: 'terminal datadump',
@@ -2483,30 +2495,43 @@ function initDiagnosticAssistant() {
 
       if (resBox) {
         resBox.classList.remove('hidden');
-        resBox.innerHTML = `<div class="p-3 rounded-lg bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 text-xs">⏳ Đang truy vấn bảng MAC trực tiếp trên phiên Terminal (Auto-Detect: <strong>${escapeHtml(detectedVendor.toUpperCase())}</strong>)...</div>`;
+        resBox.innerHTML = `<div class="p-3 rounded-lg bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 text-xs">⏳ Đang dò MAC <strong>${escapeHtml(mac.colon)}</strong> trên <strong>${escapeHtml(deviceLabel)}</strong> (Lệnh: <code>${escapeHtml(lookupCmd)}</code>)...</div>`;
       }
 
-      setTimeout(() => {
-        const cleanSlice = termLogBuffer.slice(startIdx).replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
-        const matches = parseMacTraceOutput(cleanSlice, mac);
+      const renderFinalMacMatches = (cleanOutput, usedCmd) => {
+        const matches = parseMacTraceOutput(cleanOutput, mac);
         if (!resBox) return;
         if (matches.length === 0) {
           resBox.innerHTML = `
             <div class="p-3 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs space-y-1">
-              <div>⚠️ Không tìm thấy MAC <strong class="font-mono">${escapeHtml(mac.colon)}</strong> trong MAC Table (Hãng nhận diện: <strong>${escapeHtml(detectedVendor.toUpperCase())}</strong>).</div>
-              <div class="text-[11px] text-slate-400">Lệnh đã chạy: <code class="text-emerald-300">${escapeHtml(lookupCmd)}</code> (Kiểm tra lại thiết bị đầu cuối có đang phát gói tin hoặc xem trực tiếp output trên Terminal).</div>
+              <div>⚠️ Không tìm thấy MAC <strong class="font-mono">${escapeHtml(mac.colon)}</strong> trong bảng MAC của <strong>${escapeHtml(deviceLabel)}</strong>.</div>
+              <div class="text-[11px] text-slate-400">Lệnh đã chạy: <code class="text-emerald-300">${escapeHtml(usedCmd)}</code> (Thiết bị đầu cuối có thể đang ngủ/chưa gửi gói tin — hãy thử ping tới IP thiết bị rồi dò lại).</div>
             </div>`;
         } else {
           resBox.innerHTML = matches.map(m => `
             <div class="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-xs flex flex-wrap items-center justify-between gap-2">
               <div class="space-y-0.5">
-                <div>✅ Phát hiện trên cổng <strong class="text-emerald-400 font-mono text-sm">${escapeHtml(m.port)}</strong> &bull; VLAN <strong>${escapeHtml(m.vlan)}</strong> <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">${escapeHtml(m.type)}</span></div>
-                ${m.isUplink ? '<div class="text-amber-300 text-[11px]">⚠️ Cổng này là <strong>Uplink / Trunk / Port-Channel</strong> — hãy SSH tiếp sang Switch nối với cổng này để tìm cổng Access cuối cùng.</div>' : '<div class="text-emerald-300/80 text-[11px]">🎯 Đây là cổng Access cắm trực tiếp thiết bị đầu cuối.</div>'}
+                <div>✅ Tìm thấy trên cổng <strong class="text-emerald-400 font-mono text-sm">${escapeHtml(m.port)}</strong> &bull; VLAN <strong>${escapeHtml(m.vlan)}</strong> <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">${escapeHtml(m.type)}</span></div>
+                ${m.isUplink ? '<div class="text-amber-300 text-[11px]">⚠️ Cổng này là <strong>Uplink / Trunk / Port-Channel / LAG</strong> — hãy kết nối tiếp sang Switch nối với cổng này.</div>' : '<div class="text-emerald-300/80 text-[11px]">🎯 Đây là cổng Access cắm trực tiếp thiết bị đầu cuối.</div>'}
               </div>
               <button type="button" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition" onclick="copyText('${escapeAttr(m.port)}', this)">Copy Port</button>
             </div>
           `).join('');
         }
+      };
+
+      setTimeout(() => {
+        const cleanSlice = termLogBuffer.slice(startIdx).replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+        if (/Invalid input|Unrecognized command|Syntax error|Incomplete command/i.test(cleanSlice) && lookupCmd !== 'show mac address-table') {
+          const fbStart = termLogBuffer.length;
+          termWs.send(JSON.stringify({ type: 'input', data: 'show mac address-table\n' }));
+          setTimeout(() => {
+            const fbSlice = termLogBuffer.slice(fbStart).replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+            renderFinalMacMatches(fbSlice, 'show mac address-table (Auto-Fallback)');
+          }, 1800);
+          return;
+        }
+        renderFinalMacMatches(cleanSlice, lookupCmd);
       }, 1800);
       return;
     }
@@ -2577,6 +2602,96 @@ async function runAuditDiagnosis(protocol = 'MANUAL', ip = '') {
   }
 
   renderAuditReport(auditData);
+}
+
+let activeDetectedDevice = null; // { vendor, label, prompt }
+
+function parseDeviceFingerprint(rawText) {
+  const clean = String(rawText || '').replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+  const promptMatch = clean.match(/([A-Za-z0-9._-]+)[>#]\s*$/m);
+  const prompt = promptMatch ? promptMatch[1] : '';
+
+  if (/VigorSwitch|DrayTek/i.test(clean) || /^Vty-\d+$/i.test(prompt)) {
+    const mModel = clean.match(/(VigorSwitch\s+[A-Z0-9-]+)/i);
+    return {
+      vendor: 'draytek_sw',
+      label: mModel ? `DrayTek ${mModel[1]}` : 'DrayTek VigorSwitch (Vty)',
+      prompt: prompt || 'Vty'
+    };
+  }
+  if (/MikroTik|RouterOS/i.test(clean)) {
+    return { vendor: 'mikrotik', label: 'MikroTik RouterOS', prompt };
+  }
+  if (/Huawei|VRP|Quidway|S57\d\d|S27\d\d|S37\d\d/i.test(clean)) {
+    return { vendor: 'huawei', label: 'Huawei VRP Switch', prompt };
+  }
+  if (/Cisco IOS|Catalyst|C2960|C3560|C3750|C9200|C9300/i.test(clean)) {
+    const mModel = clean.match(/(WS-C[0-9A-Z-]+|C9[0-9A-Z-]+)/i);
+    return { vendor: 'cisco', label: mModel ? `Cisco ${mModel[1]}` : 'Cisco IOS / Catalyst', prompt };
+  }
+  if (/CBS250|CBS350|SG250|SG350|SG550|Cisco Small Business/i.test(clean)) {
+    return { vendor: 'ciscocbs', label: 'Cisco CBS / SMB Switch', prompt };
+  }
+  if (/Aruba|AOS-CX|JL\d{3}A|ProCurve/i.test(clean)) {
+    return { vendor: 'aruba', label: 'HPE Aruba Switch', prompt };
+  }
+  if (/Junos|JUNOS|EX2300|EX3400|EX4300/i.test(clean)) {
+    return { vendor: 'juniper', label: 'Juniper Junos', prompt };
+  }
+  if (/Ruijie|RGOS|RG-S/i.test(clean)) {
+    return { vendor: 'ruijie', label: 'Ruijie RGOS Switch', prompt };
+  }
+  if (/FortiGate|FortiSwitch/i.test(clean)) {
+    return { vendor: 'fortinet', label: 'Fortinet FortiOS', prompt };
+  }
+  if (/Edgecore|ECS\d+/i.test(clean)) {
+    return { vendor: 'edgecore', label: 'Edgecore ECS Switch', prompt };
+  }
+  return null;
+}
+
+function updateDetectedDeviceBadge(info) {
+  const badge = document.getElementById('detected-device-badge');
+  if (!badge) return;
+  if (!info) {
+    badge.className = 'text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono';
+    badge.textContent = '🤖 Chưa định danh SW';
+    return;
+  }
+  activeDetectedDevice = info;
+  badge.className = 'text-[10px] px-2 py-0.5 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 font-mono font-bold';
+  badge.textContent = `✅ ${info.label}${info.prompt ? ' (' + info.prompt + ')' : ''}`;
+}
+
+function runSwitchIdentification(silent = false) {
+  if (!termWs || termWs.readyState !== WebSocket.OPEN) {
+    if (!silent) showToast('Vui lòng mở kết nối Live Terminal SSH/Telnet tới Switch trước!');
+    return;
+  }
+  const passive = parseDeviceFingerprint(termLogBuffer);
+  if (passive) updateDetectedDeviceBadge(passive);
+
+  const startIdx = termLogBuffer.length;
+  const probeCmd = (passive && passive.vendor === 'huawei') ? 'display version | include VRP\n'
+    : (passive && passive.vendor === 'mikrotik') ? '/system resource print\n'
+    : 'show version\n';
+
+  termWs.send(JSON.stringify({ type: 'input', data: probeCmd }));
+  if (!silent) showToast('📡 Đang gửi lệnh nhận diện Switch...');
+
+  setTimeout(() => {
+    const slice = termLogBuffer.slice(startIdx);
+    const detected = parseDeviceFingerprint(slice) || parseDeviceFingerprint(termLogBuffer);
+    if (detected) {
+      updateDetectedDeviceBadge(detected);
+      if (!silent) showToast(`✅ Đã nhận diện thiết bị: ${detected.label}`);
+    } else {
+      const fallbackVendor = detectVendorFromLog(termLogBuffer, 'AUTO');
+      const fallbackInfo = { vendor: fallbackVendor, label: fallbackVendor.toUpperCase() + ' (Auto)', prompt: '' };
+      updateDetectedDeviceBadge(fallbackInfo);
+      if (!silent) showToast(`Đã nhận diện sơ bộ hãng: ${fallbackInfo.label}`);
+    }
+  }, 1300);
 }
 
 function detectVendorFromLog(text, hintedVendor) {
@@ -2916,7 +3031,7 @@ function getMacLookupCmd(vendor, mac) {
     case 'aruba': return `show mac-address-table address ${mac.colon}`;
     case 'mikrotik': return `/interface bridge host print where mac-address="${mac.COLON}"`;
     case 'fortinet': return `diagnose ip arp list | grep ${mac.colon}`;
-    case 'draytek_sw':
+    case 'draytek_sw': return `show mac address-table`;
     case 'ciscocbs':
     case 'edgecore': return `show mac address-table address ${mac.colon}`;
     case 'ruijie': return `show mac-address-table address ${mac.dot}`;
