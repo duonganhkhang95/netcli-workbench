@@ -984,7 +984,7 @@ router.post('/diagnose/audit-scan', (req, res) => {
 // ==========================================
 // SYSTEM VERSION & CHECK FOR UPDATE APIS
 // ==========================================
-const APP_VERSION = '2.9.0';
+const APP_VERSION = '2.9.1';
 const APP_BUILD_DATE = '2026-11-12';
 
 router.get('/system/version', (req, res) => {

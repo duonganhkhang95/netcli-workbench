@@ -2459,10 +2459,6 @@ function initDiagnosticAssistant() {
     }
   });
 
-  document.getElementById('btn-identify-switch')?.addEventListener('click', () => {
-    runSwitchIdentification(false);
-  });
-
   // Live Terminal Auto-Detect MAC Address Port Tracer (with Anti-Paging)
   document.getElementById('btn-run-mac-trace')?.addEventListener('click', async () => {
     const rawMac = document.getElementById('mac-trace-input')?.value.trim();
@@ -2781,35 +2777,79 @@ function updateDetectedDeviceBadge(info) {
 }
 
 function runSwitchIdentification(silent = false) {
+  const idBtn = document.getElementById('btn-identify-switch');
+  const badge = document.getElementById('detected-device-badge');
+  const resBox = document.getElementById('mac-trace-result');
+
   if (!termWs || termWs.readyState !== WebSocket.OPEN) {
-    if (!silent) showToast('Vui lòng mở kết nối Live Terminal SSH/Telnet tới Switch trước!');
+    if (!silent) {
+      showToast('⚠️ Bạn chưa mở kết nối Live Terminal SSH/Telnet tới Switch!');
+      if (badge) {
+        badge.className = 'text-[10px] px-2 py-0.5 rounded bg-rose-950/70 text-rose-300 border border-rose-500/40 font-mono font-bold';
+        badge.textContent = '🔴 Chưa mở Terminal SSH/Telnet';
+      }
+      if (resBox) {
+        resBox.classList.remove('hidden');
+        resBox.innerHTML = `<div class="p-3 rounded-lg bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs">⚠️ <strong>Chưa có phiên kết nối:</strong> Hãy nhập IP, Tài khoản, Mật khẩu phía trên và bấm <strong>Mở Terminal (SSH / Telnet)</strong> trước, sau đó mới bấm <strong>📡 Nhận Diện SW</strong>.</div>`;
+      }
+    }
     return;
+  }
+
+  if (idBtn && !silent) {
+    idBtn.disabled = true;
+    idBtn.innerHTML = '<span>⏳ Đang đọc thông số...</span>';
+  }
+  if (badge) {
+    badge.className = 'text-[10px] px-2 py-0.5 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 font-mono';
+    badge.textContent = '⏳ Đang thăm dò show version / show system...';
   }
 
   const startIdx = termLogBuffer.length;
   // Query actual system & hardware parameters (works across Cisco, DrayTek, Edgecore, Huawei, Aruba, MikroTik, Juniper)
   const probeCommands = 'show version\nshow system\n';
   termWs.send(JSON.stringify({ type: 'input', data: probeCommands }));
+  if (term) term.focus();
   if (!silent) showToast('📡 Đang đọc thông số phần cứng & hệ điều hành Switch...');
+
+  const finishIdBtn = () => {
+    if (idBtn) {
+      idBtn.disabled = false;
+      idBtn.innerHTML = '<span>📡 Nhận Diện SW</span>';
+    }
+  };
 
   setTimeout(() => {
     const slice = termLogBuffer.slice(startIdx);
     const detected = parseDeviceFingerprint(slice) || parseDeviceFingerprint(termLogBuffer);
     if (detected) {
       updateDetectedDeviceBadge(detected);
-      if (!silent) showToast(`✅ Thông số SW: ${detected.label}`);
+      finishIdBtn();
+      if (!silent) {
+        showToast(`✅ Thông số SW: ${detected.label}`);
+        if (resBox) {
+          resBox.classList.remove('hidden');
+          resBox.innerHTML = `<div class="p-3 rounded-lg bg-cyan-950/40 border border-cyan-500/40 text-cyan-200 text-xs">✅ <strong>Đã nhận diện Switch:</strong> <span class="text-cyan-300 font-bold">${escapeHtml(detected.label)}</span> &bull; Cú pháp tra MAC đã khóa: <code class="text-emerald-300">${escapeHtml(detected.macCmd)}</code></div>`;
+        }
+      }
     } else {
-      // If neither 'show version' nor 'show system' matched standard banners, try Huawei / MikroTik system info
       const fbStart = termLogBuffer.length;
       termWs.send(JSON.stringify({ type: 'input', data: 'display version\n/system resource print\n' }));
       setTimeout(() => {
         const fbSlice = termLogBuffer.slice(fbStart);
         const detected2 = parseDeviceFingerprint(fbSlice) || parseDeviceFingerprint(termLogBuffer);
+        finishIdBtn();
         if (detected2) {
           updateDetectedDeviceBadge(detected2);
           if (!silent) showToast(`✅ Thông số SW: ${detected2.label}`);
-        } else if (!silent) {
-          showToast('⚠️ Đã đọc output nhưng chưa khớp chữ ký hãng — hệ thống sẽ dùng chế độ dò bảng MAC phổ quát.');
+        } else {
+          if (badge) {
+            badge.className = 'text-[10px] px-2 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-500/40 font-mono';
+            badge.textContent = '⚠️ Chế độ MAC phổ quát (Auto)';
+          }
+          if (!silent) {
+            showToast('⚠️ Đã đọc output nhưng chưa khớp chữ ký hãng — hệ thống sẽ dùng chế độ dò bảng MAC phổ quát.');
+          }
         }
       }, 1300);
     }
@@ -3934,3 +3974,12 @@ function initRaycastPalette() {
     }
   });
 }
+
+// Global click delegation guard for Switch Identification button
+document.addEventListener('click', (e) => {
+  const idBtn = e.target.closest('#btn-identify-switch');
+  if (idBtn) {
+    e.preventDefault();
+    runSwitchIdentification(false);
+  }
+});

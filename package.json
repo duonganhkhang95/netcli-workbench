@@ -1,6 +1,6 @@
 {
   "name": "tracedeck-workbench",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "TraceDeck - Multi-Vendor Network Engineering & Diagnostics Workbench by KhangIT",
   "main": "server.js",
   "scripts": {
