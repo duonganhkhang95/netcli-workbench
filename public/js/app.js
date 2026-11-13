@@ -2327,8 +2327,12 @@ function initDiagnosticAssistant() {
           showToast(`Đã mở Terminal ${msg.protocol} tới ${msg.host}!`);
           setTimeout(() => {
             const passive = parseDeviceFingerprint(termLogBuffer);
-            if (passive) updateDetectedDeviceBadge(passive);
-          }, 900);
+            if (passive) {
+              updateDetectedDeviceBadge(passive);
+            } else {
+              runSwitchIdentification(true);
+            }
+          }, 1200);
         } else {
           setTermStatus('disconnected', '🔴 Đã ngắt kết nối');
         }
@@ -2486,7 +2490,13 @@ function initDiagnosticAssistant() {
         draytek_sw: ''
       }[detectedVendor] || '';
 
-      const lookupCmd = getMacLookupCmd(detectedVendor, mac);
+      const lookupCmd = (fp && fp.macCmd)
+        ? fp.macCmd
+            .replace('{{MAC_DOT}}', mac.dot)
+            .replace('{{MAC_COLON}}', mac.colon)
+            .replace('{{MAC_COLON_UPPER}}', mac.COLON)
+            .replace('{{MAC_HUAWEI}}', mac.huaweiDash)
+        : getMacLookupCmd(detectedVendor, mac);
       const startIdx = termLogBuffer.length;
       const payload = (disablePaging ? `${disablePaging}\n` : '') + `${lookupCmd}\n`;
 
@@ -2604,49 +2614,156 @@ async function runAuditDiagnosis(protocol = 'MANUAL', ip = '') {
   renderAuditReport(auditData);
 }
 
-let activeDetectedDevice = null; // { vendor, label, prompt }
+let activeDetectedDevice = null; // { vendor, label, model, firmware, macCmd }
 
 function parseDeviceFingerprint(rawText) {
   const clean = String(rawText || '').replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
-  const promptMatch = clean.match(/([A-Za-z0-9._-]+)[>#]\s*$/m);
-  const prompt = promptMatch ? promptMatch[1] : '';
 
-  if (/VigorSwitch|DrayTek/i.test(clean) || /^Vty-\d+$/i.test(prompt)) {
-    const mModel = clean.match(/(VigorSwitch\s+[A-Z0-9-]+)/i);
+  // Extract structured hardware / system parameters from CLI output
+  const sysDescr = (clean.match(/(?:System\s+Description|Descr(?:iption)?|Hardware\s+Platform)\s*[:=]\s*(.+)/i) || [])[1]?.trim() || '';
+  const modelParam = (clean.match(/(?:Model\s*(?:Number|Name)?|Product\s*(?:Name|ID)|System\s+Type|Board\s+Name|Device\s+Name)\s*[:=]\s*(.+)/i) || [])[1]?.trim() || '';
+  const fwParam = (clean.match(/(?:Firmware\s+Version|Software\s+Version|System\s+Version|Version|OS\s+Version)\s*[:=,]\s*([^\r\n]+)/i) || [])[1]?.trim() || '';
+
+  const combinedSpec = `${sysDescr} ${modelParam} ${fwParam} ${clean}`;
+
+  // 1. DrayTek VigorSwitch (identified via hardware/system parameters, NOT Vty prompt)
+  if (/VigorSwitch|DrayTek/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/(VigorSwitch\s+[A-Z0-9-]+)/i);
+    const mFw = clean.match(/(?:Firmware\s+Version|Software\s+Version|Version)\s*[:=]\s*([0-9.a-zA-Z_-]+)/i);
+    const model = mModel ? mModel[1] : (modelParam || 'VigorSwitch');
+    const fw = mFw ? ` • FW ${mFw[1]}` : '';
     return {
       vendor: 'draytek_sw',
-      label: mModel ? `DrayTek ${mModel[1]}` : 'DrayTek VigorSwitch (Vty)',
-      prompt: prompt || 'Vty'
+      model,
+      firmware: mFw ? mFw[1] : '',
+      label: `DrayTek ${model}${fw}`,
+      macCmd: 'show mac address-table'
     };
   }
-  if (/MikroTik|RouterOS/i.test(clean)) {
-    return { vendor: 'mikrotik', label: 'MikroTik RouterOS', prompt };
+
+  // 2. Edgecore ECS Series (via hardware/system parameters)
+  if (/Edgecore|ECS\d{4}/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/(ECS[0-9A-Z-]+)/i);
+    const model = mModel ? mModel[1] : (modelParam || 'ECS Switch');
+    return {
+      vendor: 'edgecore',
+      model,
+      firmware: fwParam,
+      label: `Edgecore ${model}`,
+      macCmd: 'show mac address-table'
+    };
   }
-  if (/Huawei|VRP|Quidway|S57\d\d|S27\d\d|S37\d\d/i.test(clean)) {
-    return { vendor: 'huawei', label: 'Huawei VRP Switch', prompt };
+
+  // 3. Cisco CBS / Small Business (SG250/SG350/SG550/CBS250/CBS350)
+  if (/CBS[235]50|SG[235]50|Cisco\s+Small\s+Business/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/((?:CBS|SG)[0-9A-Z-]+)/i);
+    const model = mModel ? mModel[1] : (modelParam || 'CBS/SG');
+    return {
+      vendor: 'ciscocbs',
+      model,
+      firmware: fwParam,
+      label: `Cisco ${model}`,
+      macCmd: 'show mac address-table'
+    };
   }
-  if (/Cisco IOS|Catalyst|C2960|C3560|C3750|C9200|C9300/i.test(clean)) {
-    const mModel = clean.match(/(WS-C[0-9A-Z-]+|C9[0-9A-Z-]+)/i);
-    return { vendor: 'cisco', label: mModel ? `Cisco ${mModel[1]}` : 'Cisco IOS / Catalyst', prompt };
+
+  // 4. Cisco IOS / IOS-XE / Catalyst
+  if (/Cisco\s+IOS|IOS-XE|Catalyst|WS-C\d+|C9[235]\d\d|C2960|C3560|C3750|C3850/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/(WS-C[0-9A-Z-]+|C9[0-9A-Z-]+|C2960[0-9A-Z-]*|C3[578]50[0-9A-Z-]*)/i);
+    const mIos = clean.match(/Version\s+([0-9.()A-Za-z]+)/i);
+    const model = mModel ? mModel[1] : 'Catalyst IOS';
+    const fw = mIos ? ` • IOS ${mIos[1]}` : '';
+    return {
+      vendor: 'cisco',
+      model,
+      firmware: mIos ? mIos[1] : '',
+      label: `Cisco ${model}${fw}`,
+      macCmd: 'show mac address-table address {{MAC_DOT}}'
+    };
   }
-  if (/CBS250|CBS350|SG250|SG350|SG550|Cisco Small Business/i.test(clean)) {
-    return { vendor: 'ciscocbs', label: 'Cisco CBS / SMB Switch', prompt };
+
+  // 5. Huawei VRP / CloudEngine / S-Series
+  if (/Huawei|Versatile\s+Routing\s+Platform|VRP\s+\(R\)|Quidway|S[1235679]7\d\d/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/(S[1235679]7[0-9A-Z-]+|CE[0-9A-Z-]+)/i);
+    const mVrp = clean.match(/VRP\s+\(R\)\s+software,\s+Version\s+([^\r\n,]+)/i);
+    const model = mModel ? mModel[1] : 'VRP Switch';
+    const fw = mVrp ? ` • ${mVrp[1].trim()}` : '';
+    return {
+      vendor: 'huawei',
+      model,
+      firmware: mVrp ? mVrp[1].trim() : '',
+      label: `Huawei ${model}${fw}`,
+      macCmd: 'display mac-address {{MAC_HUAWEI}}'
+    };
   }
-  if (/Aruba|AOS-CX|JL\d{3}A|ProCurve/i.test(clean)) {
-    return { vendor: 'aruba', label: 'HPE Aruba Switch', prompt };
+
+  // 6. HPE Aruba (AOS-CX / AOS-Switch / ProCurve)
+  if (/Aruba|AOS-CX|ProCurve|JL\d{3}A|J9\d{3}A|Hewlett\s+Packard\s+Enterprise/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/(JL\d{3}A|J9\d{3}A|Aruba\s+[0-9A-Z-]+)/i);
+    const model = mModel ? mModel[1] : (modelParam || 'Aruba Switch');
+    return {
+      vendor: 'aruba',
+      model,
+      firmware: fwParam,
+      label: `HPE ${model}`,
+      macCmd: 'show mac-address-table address {{MAC_COLON}}'
+    };
   }
-  if (/Junos|JUNOS|EX2300|EX3400|EX4300/i.test(clean)) {
-    return { vendor: 'juniper', label: 'Juniper Junos', prompt };
+
+  // 7. Ruijie RGOS
+  if (/Ruijie|RGOS|RG-S\d+/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/(RG-S[0-9A-Z-]+)/i);
+    const model = mModel ? mModel[1] : (modelParam || 'RGOS Switch');
+    return {
+      vendor: 'ruijie',
+      model,
+      firmware: fwParam,
+      label: `Ruijie ${model}`,
+      macCmd: 'show mac-address-table address {{MAC_DOT}}'
+    };
   }
-  if (/Ruijie|RGOS|RG-S/i.test(clean)) {
-    return { vendor: 'ruijie', label: 'Ruijie RGOS Switch', prompt };
+
+  // 8. Juniper Junos / EX-Series
+  if (/JUNOS|Juniper\s+Networks|EX[234]\d{3}|QFX\d+/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/((?:EX|QFX)[0-9A-Z-]+)/i);
+    const model = mModel ? mModel[1] : (modelParam || 'EX Switch');
+    return {
+      vendor: 'juniper',
+      model,
+      firmware: fwParam,
+      label: `Juniper ${model}`,
+      macCmd: 'show ethernet-switching table | match {{MAC_COLON}}'
+    };
   }
-  if (/FortiGate|FortiSwitch/i.test(clean)) {
-    return { vendor: 'fortinet', label: 'Fortinet FortiOS', prompt };
+
+  // 9. MikroTik RouterOS / SwOS
+  if (/MikroTik|RouterOS|CRS\d+|CSS\d+|RB\d+|CCR\d+/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/((?:CRS|CSS|CCR|RB)[0-9A-Z-]+)/i);
+    const mRos = clean.match(/version:\s*([0-9.a-zA-Z]+)/i);
+    const model = mModel ? mModel[1] : 'RouterOS';
+    const fw = mRos ? ` • v${mRos[1]}` : '';
+    return {
+      vendor: 'mikrotik',
+      model,
+      firmware: mRos ? mRos[1] : '',
+      label: `MikroTik ${model}${fw}`,
+      macCmd: '/interface bridge host print where mac-address="{{MAC_COLON_UPPER}}"'
+    };
   }
-  if (/Edgecore|ECS\d+/i.test(clean)) {
-    return { vendor: 'edgecore', label: 'Edgecore ECS Switch', prompt };
+
+  // 10. Fortinet FortiSwitch / FortiGate
+  if (/FortiSwitch|FortiGate|FortiOS/i.test(combinedSpec)) {
+    const mModel = combinedSpec.match(/((?:FortiSwitch|FortiGate)-[0-9A-Z-]+)/i);
+    const model = mModel ? mModel[1] : 'FortiOS';
+    return {
+      vendor: 'fortinet',
+      model,
+      firmware: fwParam,
+      label: model,
+      macCmd: 'diagnose ip arp list | grep {{MAC_COLON}}'
+    };
   }
+
   return null;
 }
 
@@ -2655,12 +2772,12 @@ function updateDetectedDeviceBadge(info) {
   if (!badge) return;
   if (!info) {
     badge.className = 'text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono';
-    badge.textContent = '🤖 Chưa định danh SW';
+    badge.textContent = '🤖 Chưa đọc thông số SW';
     return;
   }
   activeDetectedDevice = info;
   badge.className = 'text-[10px] px-2 py-0.5 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 font-mono font-bold';
-  badge.textContent = `✅ ${info.label}${info.prompt ? ' (' + info.prompt + ')' : ''}`;
+  badge.textContent = `✅ ${info.label}`;
 }
 
 function runSwitchIdentification(silent = false) {
@@ -2668,35 +2785,40 @@ function runSwitchIdentification(silent = false) {
     if (!silent) showToast('Vui lòng mở kết nối Live Terminal SSH/Telnet tới Switch trước!');
     return;
   }
-  const passive = parseDeviceFingerprint(termLogBuffer);
-  if (passive) updateDetectedDeviceBadge(passive);
 
   const startIdx = termLogBuffer.length;
-  const probeCmd = (passive && passive.vendor === 'huawei') ? 'display version | include VRP\n'
-    : (passive && passive.vendor === 'mikrotik') ? '/system resource print\n'
-    : 'show version\n';
-
-  termWs.send(JSON.stringify({ type: 'input', data: probeCmd }));
-  if (!silent) showToast('📡 Đang gửi lệnh nhận diện Switch...');
+  // Query actual system & hardware parameters (works across Cisco, DrayTek, Edgecore, Huawei, Aruba, MikroTik, Juniper)
+  const probeCommands = 'show version\nshow system\n';
+  termWs.send(JSON.stringify({ type: 'input', data: probeCommands }));
+  if (!silent) showToast('📡 Đang đọc thông số phần cứng & hệ điều hành Switch...');
 
   setTimeout(() => {
     const slice = termLogBuffer.slice(startIdx);
     const detected = parseDeviceFingerprint(slice) || parseDeviceFingerprint(termLogBuffer);
     if (detected) {
       updateDetectedDeviceBadge(detected);
-      if (!silent) showToast(`✅ Đã nhận diện thiết bị: ${detected.label}`);
+      if (!silent) showToast(`✅ Thông số SW: ${detected.label}`);
     } else {
-      const fallbackVendor = detectVendorFromLog(termLogBuffer, 'AUTO');
-      const fallbackInfo = { vendor: fallbackVendor, label: fallbackVendor.toUpperCase() + ' (Auto)', prompt: '' };
-      updateDetectedDeviceBadge(fallbackInfo);
-      if (!silent) showToast(`Đã nhận diện sơ bộ hãng: ${fallbackInfo.label}`);
+      // If neither 'show version' nor 'show system' matched standard banners, try Huawei / MikroTik system info
+      const fbStart = termLogBuffer.length;
+      termWs.send(JSON.stringify({ type: 'input', data: 'display version\n/system resource print\n' }));
+      setTimeout(() => {
+        const fbSlice = termLogBuffer.slice(fbStart);
+        const detected2 = parseDeviceFingerprint(fbSlice) || parseDeviceFingerprint(termLogBuffer);
+        if (detected2) {
+          updateDetectedDeviceBadge(detected2);
+          if (!silent) showToast(`✅ Thông số SW: ${detected2.label}`);
+        } else if (!silent) {
+          showToast('⚠️ Đã đọc output nhưng chưa khớp chữ ký hãng — hệ thống sẽ dùng chế độ dò bảng MAC phổ quát.');
+        }
+      }, 1300);
     }
-  }, 1300);
+  }, 1400);
 }
 
 function detectVendorFromLog(text, hintedVendor) {
   if (hintedVendor && hintedVendor !== 'AUTO') return hintedVendor;
-  if (/Vty-\d+[>#]|VigorSwitch|DrayTek/i.test(text)) return 'draytek_sw';
+  if (/VigorSwitch|DrayTek/i.test(text)) return 'draytek_sw';
   if (/\/interface|\/ip address|RouterOS|sfp-sfpplus/i.test(text)) return 'mikrotik';
   if (/config system global|config firewall policy|FortiGate/i.test(text)) return 'fortinet';
   if (/sysname\s+|system-view|display\s+current|GigabitEthernet0\/0\/|bpdu-protection/i.test(text)) return 'huawei';
